@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  L'application libre et open source <b>ultime</b> pour gérer toute ta vie scolaire sans compromis.
+   DUPER SUPER L'application libre et open source <b>ultime</b> pour gérer toute ta vie scolaire sans compromis.
 </p>
 
 <p align="center">
