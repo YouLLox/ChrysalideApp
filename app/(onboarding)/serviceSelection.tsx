@@ -68,7 +68,7 @@ export default function WelcomeScreen() {
                   display: 'flex',
                   gap: 16,
                 },
-                item.type == "other" && !item.color && {
+                item.type === "other" && !item.color && {
                   backgroundColor: colors.text,
                   borderColor: colors.text,
                 }
@@ -76,18 +76,18 @@ export default function WelcomeScreen() {
             >
               <View style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon ?
-                  <Icon size={28} papicon fill={item.type == "other" && !item.color ? colors.background : undefined}>
+                  <Icon size={28} papicon fill={item.type === "other" && !item.color ? colors.background : undefined}>
                     {item.icon}
                   </Icon>
                   :
                   <Image
-                    source={item.image}
+                    source={item.image as any}
                     style={{ width: 32, height: 32, borderRadius: 20 }}
                     resizeMode="cover"
                   />
                 }
               </View>
-              <Typography style={{ flex: 1 }} nowrap variant='title' color={item.type == "other" && !item.color ? colors.background : undefined}>
+              <Typography style={{ flex: 1 }} nowrap variant='title' color={item.type === "other" && !item.color ? colors.background : undefined}>
                 {item.title}
               </Typography>
             </AnimatedPressable>

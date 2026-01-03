@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Wallpaper from './atoms/Wallpaper';
 import HomeHeader from './atoms/HomeHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,8 +21,16 @@ const HomeScreen = () => {
   const accounts = useAccountStore((state) => state.accounts);
   const router = useRouter();
 
+  // Redirect to onboarding if no accounts exist
+  useEffect(() => {
+    if (accounts.length === 0) {
+      router.replace("/(onboarding)/welcome");
+    }
+  }, [accounts.length, router]);
+
+  // Prevent flash of home content while redirecting
   if (accounts.length === 0) {
-    router.replace("/(onboarding)/welcome");
+    return null;
   }
 
   useHomeData();

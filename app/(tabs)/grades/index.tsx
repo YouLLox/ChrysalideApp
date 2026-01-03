@@ -11,7 +11,7 @@ import Reanimated, { LinearTransition, useAnimatedStyle } from 'react-native-rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getManager, subscribeManagerUpdate } from '@/services/shared';
-import { Period, Subject } from "@/services/shared/grade";
+import { Grade, GradeScore, Period, Subject } from "@/services/shared/grade";
 import ChipButton from '@/ui/components/ChipButton';
 import { CompactGrade } from '@/ui/components/CompactGrade';
 import { Dynamic } from '@/ui/components/Dynamic';
@@ -88,7 +88,7 @@ const GradesView: React.FC = () => {
   ];
 
   // Gestion du scroll
-  const [shouldCollapseHeader, setShouldCollapseHeader] = useState(false);
+  const [_shouldCollapseHeader, _setShouldCollapseHeader] = useState(false);
 
   // Manager
   const manager = getManager();
@@ -183,46 +183,46 @@ const GradesView: React.FC = () => {
   const sortedSubjects = useMemo(() => {
     const subjectsCopy = [...subjects];
     subjectsCopy.forEach((subject) => {
-      subject.grades.sort((a, b) => b.givenAt.getTime() - a.givenAt.getTime());
+      (subject.grades ?? []).sort((a, b) => (b.givenAt?.getTime() ?? 0) - (a.givenAt?.getTime() ?? 0));
     });
 
     switch (sortMethod) {
-      case "alphabetical":
-        subjectsCopy.sort((a, b) => {
-          const nameA = getSubjectName(a.name).toLowerCase();
-          const nameB = getSubjectName(b.name).toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-        break;
+    case "alphabetical":
+      subjectsCopy.sort((a, b) => {
+        const nameA = getSubjectName(a.name).toLowerCase();
+        const nameB = getSubjectName(b.name).toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      break;
 
-      case "averages":
-        subjectsCopy.sort((a, b) => {
-          const aAvg = a.studentAverage.value;
-          const bAvg = b.studentAverage.value;
-          return bAvg - aAvg;
-        });
-        break;
+    case "averages":
+      subjectsCopy.sort((a, b) => {
+        const aAvg = a.studentAverage.value;
+        const bAvg = b.studentAverage.value;
+        return bAvg - aAvg;
+      });
+      break;
 
-      default:
-        subjectsCopy.sort((a, b) => {
-          const aLatestGrade = a.grades[0];
-          const bLatestGrade = b.grades[0];
+    default:
+      subjectsCopy.sort((a, b) => {
+        const aLatestGrade = (a.grades ?? [])[0];
+        const bLatestGrade = (b.grades ?? [])[0];
 
-          if (!aLatestGrade && !bLatestGrade) { return 0; }
-          if (!aLatestGrade) { return 1; }
-          if (!bLatestGrade) { return -1; }
+        if (!aLatestGrade && !bLatestGrade) { return 0; }
+        if (!aLatestGrade) { return 1; }
+        if (!bLatestGrade) { return -1; }
 
-          return bLatestGrade.givenAt.getTime() - aLatestGrade.givenAt.getTime();
-        });
-        break;
+        return (bLatestGrade.givenAt?.getTime() ?? 0) - (aLatestGrade.givenAt?.getTime() ?? 0);
+      });
+      break;
     }
 
     return subjectsCopy;
   }, [subjects, sortMethod]);
 
   const sortedGrades = useMemo(() => {
-    const gradesCopy = [...grades];
-    gradesCopy.sort((a, b) => b.givenAt.getTime() - a.givenAt.getTime());
+    const gradesCopy = [...grades].filter((g): g is Grade => g !== undefined);
+    gradesCopy.sort((a, b) => (b.givenAt?.getTime() ?? 0) - (a.givenAt?.getTime() ?? 0));
     return gradesCopy;
   }, [grades]);
 
@@ -242,7 +242,7 @@ const GradesView: React.FC = () => {
       }
 
       // Also search in grades descriptions
-      const matchingGrades = subject.grades.filter((grade) => {
+      const matchingGrades = (subject.grades ?? []).filter((grade) => {
         return grade.description?.toLowerCase().includes(lowerSearchText);
       });
 
@@ -261,8 +261,8 @@ const GradesView: React.FC = () => {
     fetchGradesForPeriod(currentPeriod);
   }, [currentPeriod, periods]);
 
-  const renderItem = useCallback(({ item }: { item: any }) => {
-    const subject = item as Subject;
+  const renderItem = useCallback(({ item }: { item: Subject }) => {
+    const subject = item;
     return (
       // @ts-expect-error navigation types
       <MemoizedSubjectItem subject={subject} grades={grades} getAvgInfluence={getAvgInfluence} getAvgClassInfluence={getAvgClassInfluence} />
@@ -357,7 +357,7 @@ const GradesView: React.FC = () => {
                 disabled={grade.studentScore?.disabled}
                 status={grade.studentScore?.status}
                 color={getSubjectColor(getSubjectById(grade.subjectId)?.name || "")}
-                date={grade.givenAt}
+                date={grade.givenAt ?? new Date()}
                 hasMaxScore={grade?.studentScore?.value === grade?.maxScore?.value && !grade?.studentScore?.disabled}
                 onPress={() => {
                   // @ts-expect-error navigation types
@@ -420,11 +420,11 @@ const GradesView: React.FC = () => {
                   month: "short",
                   year: "numeric",
                 })
-                  } - ${period.end.toLocaleDateString(i18n.language, {
-                    month: "short",
-                    year: "numeric",
-                  })
-                  } `,
+                } - ${period.end.toLocaleDateString(i18n.language, {
+                  month: "short",
+                  year: "numeric",
+                })
+                } `,
                 state: currentPeriod?.id === period.id ? "on" : "off",
                 image: Platform.select({
                   ios: (getPeriodNumber(period.name || "0")) + ".calendar"
@@ -471,7 +471,7 @@ const GradesView: React.FC = () => {
         }
         /* Recherche */
         bottom={<Search placeholder={t('Grades_Search_Placeholder')} color='#2B7ED6' onTextChange={(text) => setSearchText(text)} />}
-        shouldCollapseHeader={shouldCollapseHeader}
+        shouldCollapseHeader={_shouldCollapseHeader}
       />
 
 
@@ -484,7 +484,7 @@ const GradesView: React.FC = () => {
         scrollEventThrottle={16}
         scrollIndicatorInsets={{ top: headerHeight - insets.top }}
 
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item: Subject) => item.id}
         itemLayoutAnimation={LinearTransition.springify()}
 
         refreshControl={

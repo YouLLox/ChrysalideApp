@@ -12,10 +12,13 @@ export function debounce<T extends (...args: any[]) => void>(
   func: T,
   wait: number
 ): T & { cancel: () => void } {
-  let timeout: NodeJS.Timeout | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   // The debounced function that will be called by the user
-  const debounced = function (this: ThisParameterType<T>, ...args: Parameters<T>) {
+  const debounced = function (
+    this: ThisParameterType<T>,
+    ...args: Parameters<T>
+  ) {
     // Clear the previous timeout, effectively resetting the timer
     if (timeout) {
       clearTimeout(timeout);

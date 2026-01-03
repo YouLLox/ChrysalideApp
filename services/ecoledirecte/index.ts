@@ -1,5 +1,9 @@
 import { Account, Session } from "pawdirecte";
 
+import { fetchEDBalances } from "@/services/ecoledirecte/balance";
+import { fetchEDQRCode } from "@/services/ecoledirecte/qrcode";
+import { Balance } from "@/services/shared/balance";
+import { QRCode } from "@/services/shared/canteen";
 import { Auth, Services } from "@/stores/account/types";
 import { error } from "@/utils/logger/logger";
 
@@ -17,18 +21,14 @@ import { fetchEDHomeworks, setEDHomeworkAsDone } from "./homework";
 import { fetchEDNews } from "./news";
 import { refreshEDAccount } from "./refresh";
 import { fetchEDTimetable } from "./timetable";
-import { QRCode } from "@/services/shared/canteen";
-import { fetchEDQRCode } from "@/services/ecoledirecte/qrcode";
-import { Balance } from "@/services/shared/balance";
-import { fetchEDBalances } from "@/services/ecoledirecte/balance";
 
 export class EcoleDirecte implements SchoolServicePlugin {
   displayName = "EcoleDirecte";
   service = Services.ECOLEDIRECTE;
   capabilities: Capabilities[] = [
-    Capabilities.REFRESH, 
-    Capabilities.NEWS, 
-    Capabilities.ATTENDANCE, 
+    Capabilities.REFRESH,
+    Capabilities.NEWS,
+    Capabilities.ATTENDANCE,
     Capabilities.CHAT_READ,
     Capabilities.GRADES,
     Capabilities.HOMEWORK,
@@ -43,20 +43,26 @@ export class EcoleDirecte implements SchoolServicePlugin {
   constructor(public accountId: string) {}
 
   async refreshAccount(credentials: Auth): Promise<EcoleDirecte> {
-    const refresh = (await refreshEDAccount(this.accountId, credentials))
+    const refresh = await refreshEDAccount(this.accountId, credentials);
 
-    this.authData = refresh.auth
-    this.account = refresh.account
-    this.session = refresh.session
+    this.authData = refresh.auth;
+    this.account = refresh.account;
+    this.session = refresh.session;
 
     return this;
   }
 
   async getHomeworks(weekNumber: number): Promise<Homework[]> {
     if (this.session && this.account) {
-      return fetchEDHomeworks(this.session, this.account, this.accountId, weekNumber);
+      return fetchEDHomeworks(
+        this.session,
+        this.account,
+        this.accountId,
+        weekNumber
+      );
     }
-    error("Session or account is not valid", "EcoleDirecte.getHomeworks")
+    error("Session or account is not valid", "EcoleDirecte.getHomeworks");
+    throw new Error("Session or account is not valid");
   }
 
   async getNews(): Promise<News[]> {
@@ -65,22 +71,25 @@ export class EcoleDirecte implements SchoolServicePlugin {
     }
 
     error("Session or account is not valid", "EcoleDirecte.getNews");
+    throw new Error("Session or account is not valid");
   }
 
   async getGradesForPeriod(period: Period): Promise<PeriodGrades> {
     if (this.session && this.account) {
-      return fetchEDGrades(this.session, this.account, this.accountId, period)
+      return fetchEDGrades(this.session, this.account, this.accountId, period);
     }
-		
+
     error("Session or account is not valid", "EcoleDirecte.getGradesForPeriod");
+    throw new Error("Session or account is not valid");
   }
 
   async getGradesPeriods(): Promise<Period[]> {
     if (this.session && this.account) {
-      return fetchEDGradePeriods(this.session, this.account, this.accountId)
+      return fetchEDGradePeriods(this.session, this.account, this.accountId);
     }
-		
+
     error("Session or account is not valid", "EcoleDirecte.getGradesPeriods");
+    throw new Error("Session or account is not valid");
   }
 
   async getAttendanceForPeriod(): Promise<Attendance> {
@@ -88,15 +97,25 @@ export class EcoleDirecte implements SchoolServicePlugin {
       return fetchEDAttendance(this.session, this.account, this.accountId);
     }
 
-    error("Session or account is not valid", "EcoleDirecte.getAttendanceForPeriod");
+    error(
+      "Session or account is not valid",
+      "EcoleDirecte.getAttendanceForPeriod"
+    );
+    throw new Error("Session or account is not valid");
   }
 
   async getWeeklyTimetable(weekNumber: number): Promise<CourseDay[]> {
     if (this.session && this.account) {
-      return fetchEDTimetable(this.session, this.account, this.accountId, weekNumber)
+      return fetchEDTimetable(
+        this.session,
+        this.account,
+        this.accountId,
+        weekNumber
+      );
     }
 
-    error("Session or account is not valid", "EcoleDirecte.getWeeklyTimetable")
+    error("Session or account is not valid", "EcoleDirecte.getWeeklyTimetable");
+    throw new Error("Session or account is not valid");
   }
 
   async getChats(): Promise<Chat[]> {
@@ -105,30 +124,45 @@ export class EcoleDirecte implements SchoolServicePlugin {
     }
 
     error("Session or account is not valid", "EcoleDirecte.getChats");
+    throw new Error("Session or account is not valid");
   }
 
   async getChatMessages(chat: Chat): Promise<Message[]> {
     if (this.session && this.account) {
-      return fetchEDChatMessage(this.session, this.account, this.accountId, chat);
+      return fetchEDChatMessage(
+        this.session,
+        this.account,
+        this.accountId,
+        chat
+      );
     }
 
-    error("Session or account is not valid", "EcoleDirecte.getChats");
+    error("Session or account is not valid", "EcoleDirecte.getChatMessages");
+    throw new Error("Session or account is not valid");
   }
 
-  async setHomeworkCompletion(homework: Homework, state?: boolean): Promise<Homework> {
+  async setHomeworkCompletion(
+    homework: Homework,
+    state?: boolean
+  ): Promise<Homework> {
     if (this.session && this.account) {
-      return setEDHomeworkAsDone(this.session, this.account, homework, state)
+      return setEDHomeworkAsDone(this.session, this.account, homework, state);
     }
 
-    error("Session or account is not valid", "EcoleDirecte.setHomeworkCompletion");
+    error(
+      "Session or account is not valid",
+      "EcoleDirecte.setHomeworkCompletion"
+    );
+    throw new Error("Session or account is not valid");
   }
 
   async getCanteenQRCodes(): Promise<QRCode> {
     if (this.session && this.account) {
-      return fetchEDQRCode(this.account)
+      return fetchEDQRCode(this.account);
     }
 
-    error("Session is not valid", "EcoleDirecte.getCanteenQRCodes")
+    error("Session is not valid", "EcoleDirecte.getCanteenQRCodes");
+    throw new Error("Session is not valid");
   }
 
   async getCanteenBalances(): Promise<Balance[]> {
@@ -136,9 +170,10 @@ export class EcoleDirecte implements SchoolServicePlugin {
       return (await fetchEDBalances(this.session)).map(balance => ({
         ...balance,
         createdByAccount: this.accountId,
-      }))
+      }));
     }
 
-    error("Session is not valid", "EcoleDirecte.getCanteenBalances")
+    error("Session is not valid", "EcoleDirecte.getCanteenBalances");
+    throw new Error("Session is not valid");
   }
 }

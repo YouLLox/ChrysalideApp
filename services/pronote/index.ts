@@ -1,19 +1,35 @@
 import { SessionHandle, TabLocation } from "pawnote";
 
-import { fetchPronoteAttendance, fetchPronoteAttendancePeriods } from "@/services/pronote/attendance";
+import {
+  fetchPronoteAttendance,
+  fetchPronoteAttendancePeriods,
+} from "@/services/pronote/attendance";
 import { fetchPronoteCanteenMenu } from "@/services/pronote/canteen";
 import {
   createPronoteMail,
   fetchPronoteChatMessages,
   fetchPronoteChatRecipients,
   fetchPronoteChats,
-  fetchPronoteRecipients, sendPronoteMessageInChat,
+  fetchPronoteRecipients,
+  sendPronoteMessageInChat,
 } from "@/services/pronote/chat";
-import { fetchPronoteGradePeriods, fetchPronoteGrades } from "@/services/pronote/grades";
-import { fetchPronoteHomeworks, setPronoteHomeworkAsDone } from "@/services/pronote/homework";
-import { fetchPronoteNews, setPronoteNewsAsAcknowledged } from "@/services/pronote/news";
+import {
+  fetchPronoteGradePeriods,
+  fetchPronoteGrades,
+} from "@/services/pronote/grades";
+import {
+  fetchPronoteHomeworks,
+  setPronoteHomeworkAsDone,
+} from "@/services/pronote/homework";
+import {
+  fetchPronoteNews,
+  setPronoteNewsAsAcknowledged,
+} from "@/services/pronote/news";
 import { refreshPronoteAccount } from "@/services/pronote/refresh";
-import { fetchPronoteCourseResources, fetchPronoteWeekTimetable } from "@/services/pronote/timetable";
+import {
+  fetchPronoteCourseResources,
+  fetchPronoteWeekTimetable,
+} from "@/services/pronote/timetable";
 import { Attendance } from "@/services/shared/attendance";
 import { CanteenMenu } from "@/services/shared/canteen";
 import { Chat, Message, Recipient } from "@/services/shared/chat";
@@ -29,8 +45,8 @@ export class Pronote implements SchoolServicePlugin {
   displayName = "PRONOTE";
   service = Services.PRONOTE;
   capabilities: Capabilities[] = [Capabilities.REFRESH];
-  session : SessionHandle | undefined = undefined;
-  tokenExpiration = new Date().getTime() + (5 * 60 * 1000);
+  session: SessionHandle | undefined = undefined;
+  tokenExpiration = new Date().getTime() + 5 * 60 * 1000;
   authData: Auth = {};
 
   constructor(public accountId: string) {}
@@ -38,7 +54,7 @@ export class Pronote implements SchoolServicePlugin {
   private async checkTokenValidty(): Promise<boolean> {
     const time = new Date().getTime();
     if (time > this.tokenExpiration) {
-      this.tokenExpiration = new Date().getTime() + (5 * 60 * 1000);
+      this.tokenExpiration = new Date().getTime() + 5 * 60 * 1000;
       await this.refreshAccount(this.authData);
       return new Date().getTime() <= this.tokenExpiration;
     }
@@ -46,15 +62,24 @@ export class Pronote implements SchoolServicePlugin {
   }
 
   async refreshAccount(credentials: Auth): Promise<Pronote> {
-    const refresh = (await refreshPronoteAccount(this.accountId, credentials));
+    const refresh = await refreshPronoteAccount(this.accountId, credentials);
     this.authData = refresh.auth;
     this.session = refresh.session;
 
-    const tabCapabilities: Partial<Record<TabLocation, Capabilities | Capabilities[]>> = {
+    const tabCapabilities: Partial<
+      Record<TabLocation, Capabilities | Capabilities[]>
+    > = {
       [TabLocation.Assignments]: Capabilities.HOMEWORK,
-      [TabLocation.Discussions]: [Capabilities.CHAT_READ, Capabilities.CHAT_REPLY, Capabilities.CHAT_CREATE],
+      [TabLocation.Discussions]: [
+        Capabilities.CHAT_READ,
+        Capabilities.CHAT_REPLY,
+        Capabilities.CHAT_CREATE,
+      ],
       [TabLocation.Grades]: Capabilities.GRADES,
-      [TabLocation.Notebook]: [Capabilities.ATTENDANCE, Capabilities.ATTENDANCE_PERIODS],
+      [TabLocation.Notebook]: [
+        Capabilities.ATTENDANCE,
+        Capabilities.ATTENDANCE_PERIODS,
+      ],
       [TabLocation.News]: Capabilities.NEWS,
       [TabLocation.Menus]: Capabilities.CANTEEN_MENU,
       [TabLocation.Timetable]: Capabilities.TIMETABLE,
@@ -63,179 +88,215 @@ export class Pronote implements SchoolServicePlugin {
     for (const tab of this.session.user.authorizations.tabs) {
       const capability = tabCapabilities[tab];
       if (capability) {
-        this.capabilities.push(...(Array.isArray(capability) ? capability : [capability]));
+        this.capabilities.push(
+          ...(Array.isArray(capability) ? capability : [capability])
+        );
       }
     }
-		
+
     return this;
   }
 
   async getHomeworks(weekNumber: number): Promise<Homework[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteHomeworks(this.session, this.accountId, weekNumber);
     }
 
     error("Session is not valid", "Pronote.getHomeworks");
+    throw new Error("Session is not valid");
   }
 
   async getNews(): Promise<News[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteNews(this.session, this.accountId);
     }
 
     error("Session is not valid", "Pronote.getNews");
+    throw new Error("Session is not valid");
   }
 
   async getGradesForPeriod(period: Period): Promise<PeriodGrades> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteGrades(this.session, this.accountId, period);
     }
 
     error("Session is not valid", "Pronote.getGradesForPeriod");
+    throw new Error("Session is not valid");
   }
 
   async getGradesPeriods(): Promise<Period[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteGradePeriods(this.session, this.accountId);
     }
 
     error("Session is not valid", "Pronote.getGradesPeriods");
+    throw new Error("Session is not valid");
   }
 
   async getAttendanceForPeriod(period: string): Promise<Attendance> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteAttendance(this.session, this.accountId, period);
     }
 
     error("Session is not valid", "Pronote.getAttendanceForPeriod");
+    throw new Error("Session is not valid");
   }
 
   async getAttendancePeriods(): Promise<Period[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteAttendancePeriods(this.session, this.accountId);
     }
 
     error("Session is not valid", "Pronote.getAttendancePeriods");
+    throw new Error("Session is not valid");
   }
 
   async getWeeklyCanteenMenu(startDate: Date): Promise<CanteenMenu[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteCanteenMenu(this.session, this.accountId, startDate);
     }
 
     error("Session is not valid", "Pronote.getWeeklyCanteenMenu");
+    throw new Error("Session is not valid");
   }
 
   async getWeeklyTimetable(weekNumber: number): Promise<CourseDay[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
-      return fetchPronoteWeekTimetable(this.session, this.accountId, weekNumber);
+      return fetchPronoteWeekTimetable(
+        this.session,
+        this.accountId,
+        weekNumber
+      );
     }
 
     error("Session is not valid", "Pronote.getWeeklyTimetable");
+    throw new Error("Session is not valid");
   }
 
   async getCourseResources(course: Course): Promise<CourseResource[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteCourseResources(this.session, course);
     }
 
-    error("Session is not valid", "Pronote.getWeeklyTimetable");
+    error("Session is not valid", "Pronote.getCourseResources");
+    throw new Error("Session is not valid");
   }
 
   async getChats(): Promise<Chat[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteChats(this.session, this.accountId);
     }
 
     error("Session is not valid", "Pronote.getChats");
+    throw new Error("Session is not valid");
   }
 
   async getChatRecipients(chat: Chat): Promise<Recipient[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteChatRecipients(this.session, chat);
     }
 
     error("Session is not valid", "Pronote.getChatRecipients");
+    throw new Error("Session is not valid");
   }
 
   async getChatMessages(chat: Chat): Promise<Message[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteChatMessages(this.session, this.accountId, chat);
     }
 
     error("Session is not valid", "Pronote.getChatMessages");
+    throw new Error("Session is not valid");
   }
 
   async getRecipientsAvailableForNewChat(): Promise<Recipient[]> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return fetchPronoteRecipients(this.session);
     }
 
     error("Session is not valid", "Pronote.getRecipientsAvailableForNewChat");
+    throw new Error("Session is not valid");
   }
 
   async sendMessageInChat(chat: Chat, content: string): Promise<void> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       await sendPronoteMessageInChat(this.session, chat, content);
     }
 
     error("Session is not valid", "Pronote.sendMessageInChat");
+    throw new Error("Session is not valid");
   }
 
   async setNewsAsAcknowledged(news: News): Promise<News> {
-    await this.checkTokenValidty()
+    await this.checkTokenValidty();
 
     if (this.session) {
       return setPronoteNewsAsAcknowledged(this.session, news);
     }
 
     error("Session is not valid", "Pronote.setNewsAsAcknowledged");
+    throw new Error("Session is not valid");
   }
 
-  async setHomeworkCompletion(homework: Homework, state?: boolean): Promise<Homework> {
-    await this.checkTokenValidty()
+  async setHomeworkCompletion(
+    homework: Homework,
+    state?: boolean
+  ): Promise<Homework> {
+    await this.checkTokenValidty();
 
     if (this.session) {
-      return setPronoteHomeworkAsDone(this.session, homework, state)
+      return setPronoteHomeworkAsDone(this.session, homework, state);
     }
-    error("Session is not valid", "Pronote.setHomeworkCompletion")
+    error("Session is not valid", "Pronote.setHomeworkCompletion");
+    throw new Error("Session is not valid");
   }
 
-  async createMail(subject: string, content: string, recipients: Recipient[]): Promise<Chat> {
-    await this.checkTokenValidty()
+  async createMail(
+    subject: string,
+    content: string,
+    recipients: Recipient[]
+  ): Promise<Chat> {
+    await this.checkTokenValidty();
 
     if (this.session) {
-      return createPronoteMail(this.session, this.accountId, subject, content, recipients)
+      return createPronoteMail(
+        this.session,
+        this.accountId,
+        subject,
+        content,
+        recipients
+      );
     }
 
-    error("Session is not valid", "Skolengo.createMail")
+    error("Session is not valid", "Pronote.createMail");
+    throw new Error("Session is not valid");
   }
 }

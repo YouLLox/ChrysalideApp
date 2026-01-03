@@ -1,25 +1,32 @@
-import { Auth, Services } from "@/stores/account/types";
-import { Capabilities, SchoolServicePlugin } from "../shared/types";
-import { refreshIzlyAccount } from "./refresh";
 import { Identification } from "ezly";
-import { Balance } from "../shared/balance";
-import { fetchIzlyBalances } from "./balances";
+
+import { Auth, Services } from "@/stores/account/types";
 import { error } from "@/utils/logger/logger";
+
+import { Balance } from "../shared/balance";
 import { CanteenHistoryItem, QRCode } from "../shared/canteen";
+import { Capabilities, SchoolServicePlugin } from "../shared/types";
+import { fetchIzlyBalances } from "./balances";
 import { fetchIzlyHistory } from "./history";
 import { fetchIzlyQRCode } from "./qrcode";
+import { refreshIzlyAccount } from "./refresh";
 
 export class Izly implements SchoolServicePlugin {
   displayName = "Izly";
   service = Services.IZLY;
-  capabilities: Capabilities[] = [Capabilities.REFRESH, Capabilities.CANTEEN_BALANCE, Capabilities.CANTEEN_HISTORY, Capabilities.CANTEEN_QRCODE];
+  capabilities: Capabilities[] = [
+    Capabilities.REFRESH,
+    Capabilities.CANTEEN_BALANCE,
+    Capabilities.CANTEEN_HISTORY,
+    Capabilities.CANTEEN_QRCODE,
+  ];
   session: Identification | undefined;
   authData: Auth = {};
 
   constructor(public accountId: string) {}
 
   async refreshAccount(credentials: Auth): Promise<Izly> {
-    const refresh = await refreshIzlyAccount(this.accountId, credentials)
+    const refresh = await refreshIzlyAccount(this.accountId, credentials);
 
     this.authData = refresh.auth;
     this.session = refresh.session;
@@ -29,10 +36,11 @@ export class Izly implements SchoolServicePlugin {
 
   async getCanteenBalances(): Promise<Balance[]> {
     if (this.session) {
-      return fetchIzlyBalances(this.accountId, this.session)
+      return fetchIzlyBalances(this.accountId, this.session);
     }
 
-    error("Session is not valid", "Izly.getCanteenBalances")
+    error("Session is not valid", "Izly.getCanteenBalances");
+    throw new Error("Session is not valid");
   }
 
   async getCanteenTransactionsHistory(): Promise<CanteenHistoryItem[]> {
@@ -40,14 +48,16 @@ export class Izly implements SchoolServicePlugin {
       return fetchIzlyHistory(this.accountId, this.session);
     }
 
-    error("Session is not valid", "Izly.getCanteenTransactionsHistory")
+    error("Session is not valid", "Izly.getCanteenTransactionsHistory");
+    throw new Error("Session is not valid");
   }
 
   async getCanteenQRCodes(): Promise<QRCode> {
     if (this.session) {
-      return fetchIzlyQRCode(this.accountId, this.session)
+      return fetchIzlyQRCode(this.accountId, this.session);
     }
 
-    error("Session is not valid", "Izly.getCanteenQRCodes")
+    error("Session is not valid", "Izly.getCanteenQRCodes");
+    throw new Error("Session is not valid");
   }
 }

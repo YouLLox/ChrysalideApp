@@ -20,4 +20,5 @@ export function getCurrentPeriod(periods: Period[]): Period {
   }
 
   error("Unable to find the current period and unable to fallback...");
+  throw new Error("Unable to find the current period");
 }

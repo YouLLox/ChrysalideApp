@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import { getChatsFromCache } from "@/database/useChat";
 import {
   AccountManager,
@@ -8,9 +9,9 @@ import {
 import { Attendance } from "@/services/shared/attendance";
 import { Chat } from "@/services/shared/chat";
 import { Period } from "@/services/shared/grade";
-import { getCurrentPeriod } from "@/utils/grades/helper/period";
 import { useAccountStore } from "@/stores/account";
 import { Services } from "@/stores/account/types";
+import { getCurrentPeriod } from "@/utils/grades/helper/period";
 
 export const useHomeHeaderData = () => {
   const accounts = useAccountStore(state => state.accounts);
@@ -35,11 +36,15 @@ export const useHomeHeaderData = () => {
   const [chats, setChats] = useState<Chat[]>([]);
 
   const absencesCount = useMemo(() => {
-    if (!attendances) return 0;
+    if (!attendances) {
+      return 0;
+    }
     let count = 0;
     attendances.forEach(att => {
       if (att && "absences" in att) {
-        if (att.absences) count += att.absences.length;
+        if (att.absences) {
+          count += att.absences.length;
+        }
       }
     });
     return count;
