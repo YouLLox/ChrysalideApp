@@ -1,54 +1,84 @@
 import { useTheme } from "@react-navigation/native";
-import { Stack } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { WebView, WebViewNavigation } from 'react-native-webview';
 
 import OnboardingBackButton from "@/components/onboarding/OnboardingBackButton";
+import OnboardingWebview from "@/components/onboarding/OnboardingWebview";
 import { useAlert } from "@/ui/components/AlertProvider";
 import Button from "@/ui/components/Button";
 import StackLayout from "@/ui/components/Stack";
 import Typography from "@/ui/components/Typography";
 import ViewContainer from "@/ui/components/ViewContainer";
 
-// Required for Android to return the auth result
-WebBrowser.maybeCompleteAuthSession();
+// Start with the Keycloak auth URL - this will handle the Microsoft redirect properly
+const KEYCLOAK_AUTH_URL = "https://ionisepita-auth.np-auriga.nfrance.net/auth/realms/npionisepita/protocol/openid-connect/auth?client_id=np-front&redirect_uri=https%3A%2F%2Fauriga.epita.fr%2F%23%2FmainContent%2Fwelcome&response_mode=fragment&response_type=code&scope=openid&prompt=login";
+
+// Success URL pattern to detect when auth is complete
+const SUCCESS_URL_PATTERN = "auriga.epita.fr";
 
 export default function AurigaLoginScreen() {
-    const [result, setResult] = useState<{ type: string; url?: string } | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [showWebView, setShowWebView] = useState(false);
+    const webViewRef = useRef<WebView>(null);
     const alert = useAlert();
     const theme = useTheme();
     const { colors } = theme;
     const insets = useSafeAreaInsets();
+    const router = useRouter();
 
-    const LOGIN_URL = "https://login.microsoftonline.com/3534b3d7-316c-4bc9-9ede-605c860f49d2/oauth2/v2.0/authorize?scope=openid+profile+email&state=CHg61gg5BomQGCi943xDz_K_Y4M-AWFPkDV_aEryzFk.vdI9jwfruJg.2dqw7iD6R4OVLsJiv__8Ig&response_type=code&client_id=5ba7da34-9df6-4a44-9042-82ac5b04b9fb&redirect_uri=https%3A%2F%2Fionisepita-auth.np-auriga.nfrance.net%2Fauth%2Frealms%2Fnpionisepita%2Fbroker%2Foidc%2Fendpoint&prompt=login&nonce=nQVgSoYOo8Svwi6B5enHsA";
+    const handleNavigationStateChange = (navState: WebViewNavigation) => {
+        const { url } = navState;
 
-    const handleLogin = async () => {
-        try {
-            setLoading(true);
-            const authResult = await WebBrowser.openAuthSessionAsync(
-                LOGIN_URL,
-                null
-            );
-
-            setResult(authResult);
-
-            if (authResult.type === 'success' && authResult.url) {
+        // Check if we've been redirected back to Auriga (success)
+        if (url.includes(SUCCESS_URL_PATTERN) && url.includes("code=")) {
+            // Extract the auth code from the URL
+            const codeMatch = url.match(/code=([^&]+)/);
+            if (codeMatch) {
+                setShowWebView(false);
                 alert.showAlert({
                     title: "Connexion réussie",
-                    description: "Retour à l'application validé.",
+                    description: "Tu es maintenant connecté à Auriga.",
                     icon: "Check",
                     color: "#00D600"
                 });
+                router.back();
             }
-        } catch (error) {
-            // Handle error silently
-        } finally {
-            setLoading(false);
         }
     };
+
+    const handleLogin = () => {
+        setShowWebView(true);
+    };
+
+    if (showWebView) {
+        return (
+            <>
+                <Stack.Screen options={{ headerShown: false }} />
+                <OnboardingWebview
+                    title="Connexion Microsoft"
+                    color="#0078D4"
+                    step={2}
+                    totalSteps={2}
+                    webViewRef={webViewRef}
+                    webviewProps={{
+                        source: { uri: KEYCLOAK_AUTH_URL },
+                        onNavigationStateChange: handleNavigationStateChange,
+                        javaScriptEnabled: true,
+                        domStorageEnabled: true,
+                        sharedCookiesEnabled: true,
+                        thirdPartyCookiesEnabled: true,
+                        incognito: false,
+                        cacheEnabled: true,
+                        keyboardDisplayRequiresUserAction: false,
+                        allowsInlineMediaPlayback: true,
+                        contentMode: "mobile",
+                    }}
+                />
+            </>
+        );
+    }
 
     return (
         <ViewContainer>
@@ -96,32 +126,17 @@ export default function AurigaLoginScreen() {
                 >
                     <StackLayout gap={16}>
                         <Typography variant="body1" style={{ color: colors.text, opacity: 0.7, textAlign: 'center' }}>
-                            Tu seras redirigé vers la page de connexion Microsoft dans ton navigateur.
+                            Connecte-toi avec ton compte Microsoft EPITA.
                         </Typography>
                     </StackLayout>
 
                     <StackLayout gap={10}>
                         <Button
-                            title="Ouvrir la page de connexion"
+                            title="Se connecter"
                             onPress={handleLogin}
-                            loading={loading}
                             style={{ backgroundColor: "#0078D4" }}
                             size="large"
                         />
-
-                        {result && (
-                            <Typography
-                                variant="body1"
-                                style={{
-                                    color: colors.text,
-                                    opacity: 0.5,
-                                    textAlign: 'center',
-                                    marginTop: 8
-                                }}
-                            >
-                                Statut: {result.type}
-                            </Typography>
-                        )}
                     </StackLayout>
                 </StackLayout>
             </View>
