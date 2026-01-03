@@ -8,8 +8,13 @@ export async function refreshMultiSession(
   accountId: string,
   credentials: Auth
 ): Promise<{ auth: Auth; session: Multi }> {
-  if (!credentials.refreshToken) {
+  // Auriga accounts don't use refresh tokens (implicit flow / cookie)
+  if (!credentials.refreshToken && credentials.additionals?.type !== "auriga") {
     error("Unable to find refreshToken", "refreshMultiSession");
+  }
+
+  if (credentials.additionals?.type === "auriga") {
+    return { auth: credentials, session: undefined as any };
   }
 
   const instanceUrl = credentials.additionals?.["instanceUrl"] as string;

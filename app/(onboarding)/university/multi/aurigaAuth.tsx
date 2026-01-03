@@ -1,9 +1,12 @@
+
 import { useTheme } from "@react-navigation/native";
 import { Stack, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, WebViewNavigation } from 'react-native-webview';
+import * as Crypto from 'expo-crypto';
+import CookieManager from '@react-native-cookies/cookies';
 
 import OnboardingBackButton from "@/components/onboarding/OnboardingBackButton";
 import OnboardingWebview from "@/components/onboarding/OnboardingWebview";
@@ -13,44 +16,144 @@ import StackLayout from "@/ui/components/Stack";
 import Typography from "@/ui/components/Typography";
 import ViewContainer from "@/ui/components/ViewContainer";
 
-// Start with the Keycloak auth URL - this will handle the Microsoft redirect properly
-const KEYCLOAK_AUTH_URL = "https://ionisepita-auth.np-auriga.nfrance.net/auth/realms/npionisepita/protocol/openid-connect/auth?client_id=np-front&redirect_uri=https%3A%2F%2Fauriga.epita.fr%2F%23%2FmainContent%2Fwelcome&response_mode=fragment&response_type=code&scope=openid&prompt=login";
+import AurigaAPI from "@/services/auriga";
+import { useAccountStore } from "@/stores/account";
+import { Account, Services } from "@/stores/account/types";
 
-// Success URL pattern to detect when auth is complete
+// Standard Auriga login
+const KEYCLOAK_AUTH_URL = "https://auriga.epita.fr";
+
+// Success URL pattern 
 const SUCCESS_URL_PATTERN = "auriga.epita.fr";
 
 export default function AurigaLoginScreen() {
     const [showWebView, setShowWebView] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const webViewRef = useRef<WebView>(null);
     const alert = useAlert();
     const theme = useTheme();
     const { colors } = theme;
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { addAccount, setLastUsedAccount } = useAccountStore();
 
-    const handleNavigationStateChange = (navState: WebViewNavigation) => {
+    // Injected JavaScript - minimal, just to keep session alive or debug
+    const INJECTED_JAVASCRIPT = `
+      true;
+    `;
+
+    const handleNavigationStateChange = async (navState: WebViewNavigation) => {
         const { url } = navState;
+        console.log("WebView Nav:", url);
 
-        // Check if we've been redirected back to Auriga (success)
-        if (url.includes(SUCCESS_URL_PATTERN) && url.includes("code=")) {
-            // Extract the auth code from the URL
-            const codeMatch = url.match(/code=([^&]+)/);
-            if (codeMatch) {
-                setShowWebView(false);
-                alert.showAlert({
-                    title: "Connexion réussie",
-                    description: "Tu es maintenant connecté à Auriga.",
-                    icon: "Check",
-                    color: "#00D600"
-                });
-                router.back();
+        // Check for success pattern
+        if (url.includes(SUCCESS_URL_PATTERN) && !isSyncing) {
+            // Check if we are past the login page likely (e.g. welcome, or just the base app loaded)
+            if (url.includes("welcome") || url.endsWith("auriga.epita.fr/") || url.includes("#")) {
+                await checkCookies(url);
             }
         }
     };
 
+    const checkCookies = async (url: string) => {
+        try {
+            const cookies = await CookieManager.get(url);
+            console.log("CookieManager Cookies:", cookies);
+
+            // We look for any substantial cookie. Auriga likely uses JSESSIONID or similar.
+            // CookieManager returns an object where keys are cookie names.
+            const cookieString = Object.entries(cookies)
+                .map(([key, value]) => `${key}=${value.value}`)
+                .join('; ');
+
+            if (cookieString && cookieString.length > 0) {
+                setShowWebView(false);
+                setIsSyncing(true);
+
+                console.log("Captured Cookies:", cookieString);
+
+                try {
+                    AurigaAPI.setCookie(cookieString);
+
+                    // Sync data
+                    const { grades, syllabus } = await AurigaAPI.sync();
+
+                    // Create Account
+                    const accountId = Crypto.randomUUID();
+                    const serviceId = Crypto.randomUUID();
+
+                    const newAccount: Account = {
+                        id: accountId,
+                        firstName: "Etudiant",
+                        lastName: "EPITA",
+                        schoolName: "EPITA",
+                        services: [
+                            {
+                                id: serviceId,
+                                serviceId: Services.MULTI,
+                                auth: {
+                                    additionals: {
+                                        type: 'auriga',
+                                        cookies: cookieString
+                                    }
+                                },
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                            }
+                        ],
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    };
+
+                    addAccount(newAccount);
+                    setLastUsedAccount(accountId);
+
+                    alert.showAlert({
+                        title: "Connexion réussie",
+                        description: "Tu es maintenant connecté à Auriga.",
+                        icon: "Check",
+                        color: "#00D600"
+                    });
+
+                    router.replace("/(tabs)");
+
+                } catch (error) {
+                    console.error("Auriga Sync Error:", error);
+                    alert.showAlert({
+                        title: "Erreur de synchronisation",
+                        description: "Impossible de récupérer tes données Auriga.",
+                        icon: "Error",
+                        color: "#D60000"
+                    });
+                    setIsSyncing(false);
+                    setShowWebView(true);
+                }
+            }
+        } catch (error) {
+            console.log("Error getting cookies:", error);
+        }
+    }
+
     const handleLogin = () => {
         setShowWebView(true);
     };
+
+    if (isSyncing) {
+        return (
+            <ViewContainer>
+                <StackLayout
+                    vAlign="center"
+                    hAlign="center"
+                    style={{ flex: 1, backgroundColor: colors.background }}
+                    gap={20}
+                >
+                    <ActivityIndicator size="large" color="#0078D4" />
+                    <Typography variant="h3">Synchronisation...</Typography>
+                    <Typography variant="body1" style={{ opacity: 0.7 }}>Récupération de tes données Auriga</Typography>
+                </StackLayout>
+            </ViewContainer>
+        );
+    }
 
     if (showWebView) {
         return (
@@ -65,15 +168,13 @@ export default function AurigaLoginScreen() {
                     webviewProps={{
                         source: { uri: KEYCLOAK_AUTH_URL },
                         onNavigationStateChange: handleNavigationStateChange,
+                        injectedJavaScript: INJECTED_JAVASCRIPT,
+                        sharedCookiesEnabled: true, // Crucial for CookieManager to see them
                         javaScriptEnabled: true,
                         domStorageEnabled: true,
-                        sharedCookiesEnabled: true,
                         thirdPartyCookiesEnabled: true,
                         incognito: false,
                         cacheEnabled: true,
-                        keyboardDisplayRequiresUserAction: false,
-                        allowsInlineMediaPlayback: true,
-                        contentMode: "mobile",
                     }}
                 />
             </>

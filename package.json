@@ -30,6 +30,7 @@
     "@legendapp/list": "^2.0.15",
     "@nozbe/watermelondb": "^0.28.0",
     "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-cookies/cookies": "^6.2.1",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native-menu/menu": "^2.0.0",
     "@react-navigation/elements": "^2.6.2",
