@@ -1,7 +1,12 @@
 import { Period } from "@/services/shared/grade";
-import { error, warn } from "@/utils/logger/logger";
+import { warn } from "@/utils/logger/logger";
 
-export function getCurrentPeriod(periods: Period[]): Period {
+export function getCurrentPeriod(periods: Period[]): Period | null {
+  if (!periods || periods.length === 0) {
+    warn("No periods available");
+    return null;
+  }
+
   const now = new Date().getTime();
   const excludedNames = ["Bac blanc", "Brevet blanc", "Hors période"];
   periods = periods
@@ -15,10 +20,12 @@ export function getCurrentPeriod(periods: Period[]): Period {
   }
 
   if (periods.length > 0) {
-    warn("Current period not found. Falling back to the first period in the array.");
+    warn(
+      "Current period not found. Falling back to the first period in the array."
+    );
     return periods[0];
   }
 
-  error("Unable to find the current period and unable to fallback...");
-  throw new Error("Unable to find the current period");
+  warn("Unable to find the current period");
+  return null;
 }

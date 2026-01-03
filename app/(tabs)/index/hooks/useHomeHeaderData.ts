@@ -61,6 +61,14 @@ export const useHomeHeaderData = () => {
     const updateAttendance = async (manager: AccountManager) => {
       const periods = await manager.getAttendancePeriods();
       const currentPeriod = getCurrentPeriod(periods);
+
+      if (!currentPeriod) {
+        // No periods available (e.g., Auriga doesn't provide period data)
+        attendancesPeriodsRef.current = periods;
+        setAttendances([]);
+        return;
+      }
+
       const fetchedAttendances = await manager.getAttendanceForPeriod(
         currentPeriod.name
       );

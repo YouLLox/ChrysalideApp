@@ -1,10 +1,10 @@
 import { Stack } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { Platform } from "react-native";
 
 import { runsIOS26 } from "@/ui/utils/IsLiquidGlass";
 import { screenOptions } from "@/utils/theme/ScreenOptions";
-import { Platform } from "react-native";
 
 export default function Layout() {
   const { t } = useTranslation();
@@ -44,30 +44,11 @@ export default function Layout() {
       />
 
       <Stack.Screen
-        name="cards"
-        options={{
-          headerShown: true,
-          headerTitle: t("Settings_Cards_Title"),
-          headerLargeTitle: false,
-          headerBackButtonDisplayMode: "minimal",
-          gestureEnabled: true
-        }}
-      />
-      <Stack.Screen
         name="about"
         options={{
           headerTitle: t("Settings_About_Title"),
           headerBackButtonDisplayMode: "minimal",
           headerTransparent: Platform.OS === "ios",
-          headerLargeTitle: false,
-        }}
-      />
-      <Stack.Screen
-        name="magic"
-        options={{
-          headerTitle: t("Settings_MagicPlus_Title"),
-          headerBackButtonDisplayMode: "minimal",
-          headerTransparent: false,
           headerLargeTitle: false,
         }}
       />

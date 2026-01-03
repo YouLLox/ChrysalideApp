@@ -170,6 +170,29 @@ export default function AurigaLoginScreen() {
             AurigaAPI.setToken(accessToken);
             AurigaAPI.setCookie(cookiesString);
 
+            // Fetch student info from /api/me
+            setSyncStatus("Récupération des informations de l'étudiant...");
+            let studentFirstName = "Etudiant";
+            let studentLastName = "EPITA";
+
+            try {
+                const meResponse = await fetch("https://auriga.epita.fr/api/me", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Accept": "application/json",
+                    },
+                });
+                if (meResponse.ok) {
+                    const meData = await meResponse.json();
+                    studentFirstName = meData.person?.currentFirstName || "Etudiant";
+                    studentLastName = meData.person?.currentLastName || "EPITA";
+                    console.log(`Student: ${studentFirstName} ${studentLastName}`);
+                }
+            } catch (e) {
+                console.warn("Could not fetch /api/me:", e);
+            }
+
             setSyncStatus("Récupération des notes et de l'emploi du temps...");
             await AurigaAPI.sync();
 
@@ -178,8 +201,8 @@ export default function AurigaLoginScreen() {
 
             const newAccount: Account = {
                 id: accountId,
-                firstName: "Etudiant",
-                lastName: "EPITA",
+                firstName: studentFirstName,
+                lastName: studentLastName,
                 schoolName: "EPITA",
                 services: [{
                     id: serviceId,
@@ -205,7 +228,7 @@ export default function AurigaLoginScreen() {
                 color: "#00D600"
             });
 
-            router.replace("/(tabs)");
+            router.push("/(tabs)" as any);
 
         } catch (error) {
             console.error("Auriga Sync Error:", error);

@@ -30,7 +30,7 @@ const ICONS = {
     require('@/assets/icons/home_padding.svg')
     : require('@/assets/icons/home.svg'),
   calendar: IS_IOS_WITH_PADDING ? require('@/assets/icons/calendar_padding.svg') : require('@/assets/icons/calendar.svg'),
-  tasks: IS_IOS_WITH_PADDING ? require('@/assets/icons/tasks_padding.svg') : require('@/assets/icons/tasks.svg'),
+
   grades: IS_IOS_WITH_PADDING ? require('@/assets/icons/results_padding.svg') : require('@/assets/icons/results.svg'),
   news: IS_IOS_WITH_PADDING ? require('@/assets/icons/news_padding.svg') : require('@/assets/icons/news.svg'),
 } as const;
@@ -44,7 +44,7 @@ const TAB_LABEL_STYLE = {
 // Static icon functions to prevent recreation
 const getHomeIcon = () => ICONS.home;
 const getCalendarIcon = () => ICONS.calendar;
-const getTasksIcon = () => ICONS.tasks;
+
 const getGradesIcon = () => ICONS.grades;
 const getNewsIcon = () => ICONS.news;
 
@@ -55,7 +55,7 @@ const useTabTranslations = () => {
   return useMemo(() => ({
     home: t("Tab_Home"),
     calendar: t("Tab_Calendar"),
-    tasks: t("Tab_Tasks"),
+
     grades: t("Tab_Grades"),
     news: t("Tab_News"),
   }), [t]);
@@ -76,10 +76,7 @@ export default function TabLayout() {
       title: translations.calendar,
       tabBarIcon: getCalendarIcon,
     },
-    tasks: {
-      title: translations.tasks,
-      tabBarIcon: getTasksIcon,
-    },
+
     grades: {
       title: translations.grades,
       tabBarIcon: getGradesIcon,
@@ -110,10 +107,7 @@ export default function TabLayout() {
         name="calendar"
         options={screenOptions.calendar}
       />
-      <Tabs.Screen
-        name="tasks"
-        options={screenOptions.tasks}
-      />
+
       <Tabs.Screen
         name="grades"
         options={screenOptions.grades}

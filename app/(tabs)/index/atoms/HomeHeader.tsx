@@ -1,41 +1,23 @@
-import React, { useMemo } from 'react';
-import { View } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Stack from '@/ui/components/Stack';
-import { useHomeHeaderData } from '../hooks/useHomeHeaderData';
-import HomeHeaderButton, { HomeHeaderButtonItem } from '../components/HomeHeaderButton';
-import { getCurrentPeriod } from '@/utils/grades/helper/period';
-import WrappedBanner from './WrappedBanner';
 import { LiquidGlassContainer } from '@sbaiahmed1/react-native-blur';
+import { router } from 'expo-router';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import Stack from '@/ui/components/Stack';
+import { getCurrentPeriod } from '@/utils/grades/helper/period';
+
+import HomeHeaderButton, { HomeHeaderButtonItem } from '../components/HomeHeaderButton';
+import { useHomeHeaderData } from '../hooks/useHomeHeaderData';
+
 
 const HomeHeader = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { availableCanteenCards, attendancesPeriods, attendances, absencesCount, chats } = useHomeHeaderData();
+  const { attendancesPeriods, attendances, absencesCount } = useHomeHeaderData();
 
   const HomeHeaderButtons: HomeHeaderButtonItem[] = useMemo(() => [
-    {
-      title: t("Home_Cards_Button_Title"),
-      icon: "card",
-      color: "#EE9F00",
-      description: availableCanteenCards.length > 0 ?
-        (availableCanteenCards.length > 1 ? t("Home_Cards_Button_Description_Number", { number: availableCanteenCards.length }) :
-          t("Home_Cards_Button_Description_Singular")) : t("Home_Cards_Button_Description_None"),
-      onPress: () => {
-        router.push("/(features)/(cards)/cards");
-      }
-    },
-    {
-      title: t("Home_Menu_Button_Title"),
-      icon: "cutlery",
-      color: "#7ED62B",
-      description: t("Home_Menu_Button_Description"),
-      onPress: () => {
-        router.push("/(features)/soon");
-      }
-    },
     {
       title: t("Home_Attendance_Title"),
       icon: "chair",
@@ -53,19 +35,8 @@ const HomeHeader = () => {
           },
         });
       }
-    },
-    {
-      title: t("Home_Chats_Button_Title"),
-      icon: "textbubble",
-      color: "#2B7ED6",
-      description: chats.length > 0 ?
-        (chats.length > 1 ? t("Home_Chats_Button_Description_Number", { number: chats.length }) : t("Home_Chats_Button_Description_Singular"))
-        : t("Home_Chats_Button_Description_None"),
-      onPress: () => {
-        router.push("/(features)/soon");
-      }
     }
-  ], [availableCanteenCards, absencesCount, chats, attendancesPeriods, attendances, t]);
+  ], [absencesCount, attendancesPeriods, attendances, t]);
 
   return (
     <View style={{ paddingHorizontal: 0, paddingVertical: 12, width: "100%", flex: 1 }}>
@@ -86,9 +57,6 @@ const HomeHeader = () => {
         </Stack>
       </LiquidGlassContainer>
 
-      {__DEV__ && (
-        <WrappedBanner />
-      )}
     </View>
   );
 };

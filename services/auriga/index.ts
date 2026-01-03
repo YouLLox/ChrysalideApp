@@ -1,10 +1,6 @@
 import { MMKV } from "react-native-mmkv";
 
-import {
-  GRADES_PAYLOAD,
-  SYLLABUS_PAYLOAD,
-  SYLLABUS2_PAYLOAD,
-} from "./payloads";
+import { SYLLABUS_PAYLOAD, SYLLABUS2_PAYLOAD } from "./payloads";
 import { Grade, Syllabus, UserData } from "./types";
 
 // Initialize MMKV storage
@@ -193,12 +189,11 @@ class AurigaAPI {
 
   // Using User's endpoints from their code snippet
   private async fetchAllGrades(): Promise<Grade[]> {
-    // User endpoint: menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true
-    // Note: This menu ID (1036) might be user-specific. If it fails, we return empty.
+    // Correct endpoint: menuEntries/1036/query/945 (GET request)
+    // Note: This menu ID (1036) and query ID (945) might be user-specific. If it fails, we return empty.
     try {
-      const response = await this.postDataToAuriga(
-        "menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true",
-        GRADES_PAYLOAD
+      const response = await this.getDataFromAuriga(
+        "menuEntries/1036/query/945"
       );
 
       // User's response structure: data.content.lines.map(...)

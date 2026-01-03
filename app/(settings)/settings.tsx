@@ -80,14 +80,7 @@ export default function SettingsIndex() {
           color: "#0038A8",
           onPress: () => Alert.alert("Ça arrive... ✨", "Cette fonctionnalité n'est pas encore disponible.")
         },*/
-        {
-          title: t('Settings_Donate_Title'),
-          description: t('Settings_Donate_Description'),
-          papicon: <Papicons name={"Heart"} />,
-          icon: <HeartIcon />,
-          color: "#EFA400",
-          onPress: () => WebBrowser.openBrowserAsync("https://go.papillon.bzh/donate")
-        },
+
         {
           title: t('Settings_About_Title'),
           description: `${t('Settings_About_Description')} ${packagejson.version}`,
@@ -174,24 +167,7 @@ export default function SettingsIndex() {
           Alert.alert("Ça arrive... ✨", "Cette fonctionnalité n'est pas encore disponible.")
         }
       },
-      {
-        icon: <Papicons name={"Card"} />,
-        title: t("Settings_Cards_Banner_Title"),
-        description: t('Settings_Cantineen_Subtitle_Card'),
-        color: "#0059DD",
-        onPress: () => {
-          router.navigate("/(settings)/cards")
-        }
-      },
-      {
-        icon: <Papicons name={"Sparkles"} />,
-        title: "Magic+",
-        description: t('Settings_MagicPlus_Description_Card'),
-        color: "#DD007D",
-        onPress: () => {
-          router.navigate("/(settings)/magic")
-        }
-      }
+
     ]
 
   const RenderBigButtons = useCallback(() => {
