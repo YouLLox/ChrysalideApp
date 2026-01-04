@@ -113,7 +113,7 @@ export class Multi implements SchoolServicePlugin {
     }
 
     const semesterNum = period.id ? parseInt(period.id.replace("S", "")) : 0;
-    const grades = AurigaAPI.getAllGrades().filter(
+    const enrichedGrades = AurigaAPI.getEnrichedGrades().filter(
       g => g.semester === semesterNum
     );
     const syllabusList = AurigaAPI.getAllSyllabus();
@@ -121,7 +121,7 @@ export class Multi implements SchoolServicePlugin {
     const subjectsMap: Record<string, Subject> = {};
 
     // For each grade, find matching syllabus and group by syllabus display name
-    grades.forEach(g => {
+    enrichedGrades.forEach(g => {
       // Extract UE+[parcours]+subject code from grade name
       // Format: 2526_I_INF_FISE_S03_CN_PC_PSE_EXA_1 -> extract "CN_PC_PSE"
       // Format: 2526_I_INF_FISE_S03_AG_COM3_EXA_1 -> extract "AG_COM3"
@@ -172,9 +172,6 @@ export class Multi implements SchoolServicePlugin {
         // Extract exam part from name for description
         const syllabusCode = matchingSyllabus.name.replace(/\.[^.]+$/, "");
         const examPart = g.name.replace(syllabusCode + "_", "");
-        if (examPart) {
-          description = examPart.replace(/_/g, " ");
-        }
 
         // Find matching exam in syllabus by exam type code
         const matchingExam = matchingSyllabus.exams?.find(
@@ -182,6 +179,27 @@ export class Multi implements SchoolServicePlugin {
         );
         const availableExamTypes =
           matchingSyllabus.exams?.map(e => e.type).join(", ") || "none";
+
+        // Use the syllabus exam's typeName for description if available
+        if (matchingExam) {
+          const examDescription =
+            typeof matchingExam.description === "string"
+              ? matchingExam.description
+              : matchingExam.description?.fr || matchingExam.description?.en;
+
+          if (examDescription && matchingExam.typeName) {
+            // Combine typeName and description
+            description = `${matchingExam.typeName} - ${examDescription}`;
+          } else if (examDescription) {
+            description = examDescription;
+          } else if (matchingExam.typeName) {
+            description = matchingExam.typeName;
+          } else if (examPart) {
+            description = examPart.replace(/_/g, " ");
+          }
+        } else if (examPart) {
+          description = examPart.replace(/_/g, " ");
+        }
 
         if (matchingExam && matchingExam.weighting) {
           // Convert percentage to decimal (e.g., 30 -> 0.30)

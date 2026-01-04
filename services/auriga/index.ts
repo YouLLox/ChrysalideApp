@@ -51,18 +51,43 @@ class AurigaAPI {
     console.log("Fetching Grades...");
     try {
       fetchedGrades = await this.fetchAllGrades();
-      storage.set("auriga_grades", JSON.stringify(fetchedGrades));
-      console.log(`Fetched ${fetchedGrades.length} grades.`);
+      // Only save to cache if we got valid data (prevents wiping cache on 401 errors)
+      if (fetchedGrades.length > 0) {
+        storage.set("auriga_grades", JSON.stringify(fetchedGrades));
+        console.log(`Fetched ${fetchedGrades.length} grades.`);
+      } else {
+        console.log("No grades fetched, keeping existing cache.");
+        // Load existing cached grades instead
+        const cached = storage.getString("auriga_grades");
+        if (cached) {
+          fetchedGrades = JSON.parse(cached);
+        }
+      }
     } catch (e) {
       console.error("Failed to fetch grades:", e);
+      // Keep existing cache
+      const cached = storage.getString("auriga_grades");
+      if (cached) {
+        fetchedGrades = JSON.parse(cached);
+      }
     }
 
     // 2. Fetch Syllabus
     console.log("Fetching Syllabus...");
     try {
       fetchedSyllabus = await this.fetchAllSyllabus();
-      storage.set("auriga_syllabus", JSON.stringify(fetchedSyllabus));
-      console.log(`Fetched ${fetchedSyllabus.length} syllabus items.`);
+      // Only save to cache if we got valid data (prevents wiping cache on 401 errors)
+      if (fetchedSyllabus.length > 0) {
+        storage.set("auriga_syllabus", JSON.stringify(fetchedSyllabus));
+        console.log(`Fetched ${fetchedSyllabus.length} syllabus items.`);
+      } else {
+        console.log("No syllabus fetched, keeping existing cache.");
+        // Load existing cached syllabus instead
+        const cached = storage.getString("auriga_syllabus");
+        if (cached) {
+          fetchedSyllabus = JSON.parse(cached);
+        }
+      }
 
       // Register syllabus items as subjects in the database
       const subjectsToAdd = fetchedSyllabus.map((s: Syllabus) => ({
@@ -126,12 +151,31 @@ class AurigaAPI {
             // Extract exam type from name (e.g., "..._EXA_1" -> "EXA_1")
             const examPart = g.name.replace(syllabusCode + "_", "");
 
+            // Match with syllabus exam to get descriptive name
+            const parts = examPart.split("_");
+            const type = parts[0];
+            const index = parts[1] ? parseInt(parts[1], 10) : 1;
+
+            const matchingExams =
+              syllabus.exams?.filter(
+                e => e.type?.toUpperCase() === type.toUpperCase()
+              ) || [];
+            const matchingExam = matchingExams[index - 1];
+
+            // Use descriptive name if available
+            const examDescription =
+              typeof matchingExam?.description === "string"
+                ? matchingExam.description
+                : matchingExam?.description?.fr ||
+                  matchingExam?.description?.en;
+
             return {
               id: g.code,
               createdByAccount: "auriga",
               subjectId: syllabusCode,
               subjectName: displayName,
-              description: examPart || g.type,
+              description:
+                examDescription || matchingExam?.typeName || examPart || g.type,
               givenAt: new Date(),
               outOf: { value: 20 },
               coefficient: 1,
@@ -173,6 +217,62 @@ class AurigaAPI {
     return this.getAllGrades().find(g => g.code.toString() === code);
   }
 
+  /**
+   * Returns grades enriched with syllabus exam descriptions and weightings.
+   * This is cached after the first call for performance.
+   */
+  getEnrichedGrades(): (Grade & { description: string; weighting: number })[] {
+    const allGrades = this.getAllGrades();
+    const syllabusList = this.getAllSyllabus();
+
+    return allGrades.map(g => {
+      // Find matching syllabus by prefix
+      const matchingSyllabus = syllabusList.find(s => {
+        const syllabusCode = s.name.replace(/\.[^.]+$/, "");
+        return g.name.startsWith(syllabusCode + "_");
+      });
+
+      if (!matchingSyllabus) {
+        return { ...g, description: g.type || g.name, weighting: 1 };
+      }
+
+      const syllabusCode = matchingSyllabus.name.replace(/\.[^.]+$/, "");
+      const examPart = g.name.replace(syllabusCode + "_", "");
+      const parts = examPart.split("_");
+      const type = parts[0];
+      const index = parts[1] ? parseInt(parts[1], 10) : 1;
+
+      const matchingExams =
+        matchingSyllabus.exams?.filter(
+          e => e.type?.toUpperCase() === type.toUpperCase()
+        ) || [];
+      const matchingExam = matchingExams[index - 1];
+
+      // Get description from syllabus exam
+      let description = examPart.replace(/_/g, " ");
+      if (matchingExam) {
+        const examDescription =
+          typeof matchingExam.description === "string"
+            ? matchingExam.description
+            : matchingExam.description?.fr || matchingExam.description?.en;
+
+        if (examDescription && matchingExam.typeName) {
+          description = `${matchingExam.typeName} - ${examDescription}`;
+        } else if (examDescription) {
+          description = examDescription;
+        } else if (matchingExam.typeName) {
+          description = matchingExam.typeName;
+        }
+      }
+
+      return {
+        ...g,
+        description,
+        weighting: matchingExam?.weighting ?? 1,
+      };
+    });
+  }
+
   getAllSyllabus(): Syllabus[] {
     const data = storage.getString("auriga_syllabus");
     const syllabusList: Syllabus[] = data ? JSON.parse(data) : [];
@@ -189,19 +289,30 @@ class AurigaAPI {
 
       // Match each grade with its exam weighting from the syllabus
       const gradesWithWeightings = matchedGrades.map(g => {
-        // Extract exam type from grade name (e.g., "..._EXA_1" -> "EXA")
-        const examTypeMatch = g.name
-          .replace(subjectCode + "_", "")
-          .split("_")[0];
+        // Extract exam type from grade name (e.g., "..._EXA_1" -> "EXA_1")
+        const examPart = g.name.replace(subjectCode + "_", "");
 
         // Find matching exam in syllabus to get weighting
-        const matchingExam = s.exams?.find(
-          e => e.type?.toUpperCase() === examTypeMatch?.toUpperCase()
-        );
+        const parts = examPart.split("_");
+        const type = parts[0];
+        const index = parts[1] ? parseInt(parts[1], 10) : 1;
+
+        const matchingExams =
+          s.exams?.filter(e => e.type?.toUpperCase() === type.toUpperCase()) ||
+          [];
+        const matchingExam = matchingExams[index - 1];
+
+        // Use descriptive name if available
+        const examDescription =
+          typeof matchingExam?.description === "string"
+            ? matchingExam.description
+            : matchingExam?.description?.fr || matchingExam?.description?.en;
 
         return {
           ...g,
           weighting: matchingExam?.weighting ?? 1,
+          description:
+            examDescription || matchingExam?.typeName || examPart || g.type,
         };
       });
 

@@ -33,7 +33,7 @@ const GradeItem = React.memo(({ grade, subjectName, subjectColor, onPress, getAv
 
   return (
     <Item isLast={isLast} onPress={handlePress}>
-      <Typography variant='title'>
+      <Typography variant='title' numberOfLines={2}>
         {grade.description ? grade.description : t('Grade_NoDescription', { subject: subjectName })}
       </Typography>
       <Typography variant='body2' color='secondary'>
