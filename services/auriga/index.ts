@@ -224,13 +224,15 @@ class AurigaAPI {
             return;
           }
 
-          const gradeValue = row[4];
+          const gradeValue = row[1];
           const itemCode = row[0];
-          const typeName = row[2];
+          const itemName = row[2];
+          const typeName = row[4];
 
           let semester = 0;
-          if (typeof itemCode === "string") {
-            const match = itemCode.match(/_S(\d+)_/i);
+          // Extract semester from name (e.g. "..._S5_...")
+          if (typeof itemName === "string") {
+            const match = itemName.match(/_S(\d+)_/i);
             if (match) {
               semester = parseInt(match[1]);
             }
@@ -240,7 +242,7 @@ class AurigaAPI {
             allGrades.push({
               code: String(itemCode),
               type: String(typeName),
-              name: String(itemCode),
+              name: String(itemName),
               semester: semester,
               grade: Number(String(gradeValue).replace(",", ".")) || 0,
             });
@@ -267,19 +269,27 @@ class AurigaAPI {
 
     // 1. Get List of IDs
     const entryUrl = "menuEntries/166/searchResult?size=100&page=1&sort=id";
-    const ids1 = await this.postDataToAuriga(entryUrl, SYLLABUS_PAYLOAD);
-    const ids2 = await this.postDataToAuriga(entryUrl, SYLLABUS2_PAYLOAD);
+    let allIds: string[] = [];
 
-    // ids.content.lines contains the IDs?
-    // User code: sylabuses.push(...data.content.lines.map(line => line[0]));
+    try {
+      const ids1 = await this.postDataToAuriga(entryUrl, SYLLABUS_PAYLOAD);
+      const ids2 = await this.postDataToAuriga(entryUrl, SYLLABUS2_PAYLOAD);
 
-    const extractIds = (res: any) =>
-      res?.content?.lines?.map((l: any) => l[0]) || [];
+      const extractIds = (res: any) =>
+        res?.content?.lines?.map((l: any) => l[0]) || [];
 
-    const allIds = [...new Set([...extractIds(ids1), ...extractIds(ids2)])];
-    console.log(`Found ${allIds.length} syllabus IDs. Fetching details...`);
+      allIds = [...new Set([...extractIds(ids1), ...extractIds(ids2)])];
+      console.log(`Found ${allIds.length} syllabus IDs. Fetching details...`);
+    } catch (e) {
+      console.error(
+        "Failed to fetch syllabus IDs (skipping syllabus sync):",
+        e
+      );
+      return [];
+    }
 
-    // 2. Fetch Details for each ID (Limit to 10 for speed during testing?)
+    // 2. Fetch Details for each ID
+
     // Let's try to fetch all, but maybe in parallel batches.
 
     const syllabusDetails: Syllabus[] = [];
