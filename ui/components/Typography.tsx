@@ -144,6 +144,7 @@ const arePropsEqual = (prev: TypographyProps, next: TypographyProps) => {
   if (prev.inline !== next.inline) { return false; }
   if (prev.nowrap !== next.nowrap) { return false; }
   if (prev.skeleton !== next.skeleton) { return false; }
+  if (prev.numberOfLines !== next.numberOfLines) { return false; }
 
   if (prev.style === next.style) { return true; }
 
