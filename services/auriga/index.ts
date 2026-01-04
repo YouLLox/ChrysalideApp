@@ -1,6 +1,10 @@
 import { MMKV } from "react-native-mmkv";
 
-import { SYLLABUS_PAYLOAD, SYLLABUS2_PAYLOAD } from "./payloads";
+import {
+  GRADES_PAYLOAD,
+  SYLLABUS_PAYLOAD,
+  SYLLABUS2_PAYLOAD,
+} from "./payloads";
 import { Grade, Syllabus, UserData } from "./types";
 
 // Initialize MMKV storage
@@ -79,7 +83,16 @@ class AurigaAPI {
 
   getAllSyllabus(): Syllabus[] {
     const data = storage.getString("auriga_syllabus");
-    return data ? JSON.parse(data) : [];
+    const syllabusList: Syllabus[] = data ? JSON.parse(data) : [];
+    const grades = this.getAllGrades();
+
+    return syllabusList.map(s => {
+      const grade = grades.find(g => g.code === s.name);
+      return {
+        ...s,
+        grade: grade ? grade.grade : undefined,
+      };
+    });
   }
 
   getSyllabusBySemester(semester: number): Syllabus[] {
@@ -189,97 +202,57 @@ class AurigaAPI {
 
   // Using User's endpoints from their code snippet
   private async fetchAllGrades(): Promise<Grade[]> {
-    // Correct endpoint: menuEntries/1036/query/945 (GET request)
-    // Note: This menu ID (1036) and query ID (945) might be user-specific. If it fails, we return empty.
     try {
-      const response = await this.getDataFromAuriga(
-        "menuEntries/1036/query/945"
-      );
+      const allGrades: Grade[] = [];
+      let page = 1;
+      let totalPages = 1;
 
-      // User's response structure: data.content.lines.map(...)
-      // My previous assumption was response.rows.
-      // Adapting to User's structure:
+      do {
+        const endpoint = `menuEntries/1036/searchResult?size=100&page=${page}&sort=id&disableWarnings=true`;
+        console.log(`Fetching Grades Page ${page}...`);
 
-      // Check if response has 'content' and 'lines' (User's structure)
-      // Or 'rows' (My old structure - maybe from syllabus?)
-      // User code: grades.content.lines.map(element => ...)
+        const response = await this.postDataToAuriga(endpoint, GRADES_PAYLOAD);
 
-      const lines = response?.content?.lines || response?.rows || [];
+        if (response && response.totalPages) {
+          totalPages = response.totalPages;
+        }
 
-      const grades: Grade[] = lines
-        .map((row: any) => {
-          // User map:
-          // code: element[0]
-          // type: element[4]
-          // name: element[2]
-          // semester: ... element[2].split ...
-          // grade: element[1]
+        const lines = response?.content?.lines || [];
 
-          // Wait, lines might be Arrays if it's 'content.lines'
-          // In my previous 'rows' structure, row.data[Index] was used.
-          // User's code implies 'element' IS the array.
-
-          // Let's assume 'row' is the array [code, grade, name, ...] or similar.
-          // Or row is { data: [...] } ?
-
-          // If we trust the User's code: element is an array.
-          // element[0] = code
-          // element[1] = grade
-          // element[2] = name
-          // element[4] = type
-
-          // My previous code:
-          // row.data[8] = code
-          // row.data[6] = grade
-
-          // The indices are VERY different.
-          // I will trust the USER's code indices for THIS endpoint.
-
-          const isArray = Array.isArray(row);
-          const data = isArray ? row : row.data; // Handle both potential formats
-
-          if (!data) {
-            return null;
+        lines.forEach((row: any) => {
+          if (!Array.isArray(row) || row.length < 5) {
+            return;
           }
 
-          // User indices:
-          const code = data[0];
-          const gradeValue = data[1];
-          const name = data[2];
-          const type = data[4];
+          const gradeValue = row[4];
+          const itemCode = row[0];
+          const typeName = row[2];
 
-          // Semester parsing from Name: "UE_..._S3_..."
-          // User code: parseInt(String(element[2]).split("_")[4].split("S")[1])
           let semester = 0;
-          try {
-            if (typeof name === "string" && name.includes("_S")) {
-              const parts = name.split("_");
-              const semPart = parts.find(
-                p => p.startsWith("S") && p.length <= 3
-              ); // Find "S3", "S4"
-              if (semPart) {
-                semester = parseInt(semPart.replace("S", ""));
-              }
+          if (typeof itemCode === "string") {
+            const match = itemCode.match(/_S(\d+)_/i);
+            if (match) {
+              semester = parseInt(match[1]);
             }
-          } catch (e) {}
-
-          if (gradeValue === null || gradeValue === undefined) {
-            return null;
           }
 
-          return {
-            code: String(code),
-            type: String(type),
-            name: String(name),
-            semester: semester,
-            grade: gradeValue,
-          };
-        })
-        .filter((g: any) => g !== null);
+          if (gradeValue !== null && gradeValue !== undefined) {
+            allGrades.push({
+              code: String(itemCode),
+              type: String(typeName),
+              name: String(itemCode),
+              semester: semester,
+              grade: Number(String(gradeValue).replace(",", ".")) || 0,
+            });
+          }
+        });
 
-      return grades;
+        page++;
+      } while (page <= totalPages);
+
+      return allGrades;
     } catch (e) {
-      console.warn("Grades fetch failed (endpoint may be user-specific):", e);
+      console.warn("Grades fetch failed:", e);
       return [];
     }
   }

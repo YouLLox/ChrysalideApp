@@ -1,5 +1,5 @@
 export interface Grade {
-  code: number;
+  code: string;
   type: string;
   name: string;
   semester: number;
@@ -23,6 +23,7 @@ export interface Syllabus {
   instructorsEditors: Instructor[];
   activities: Activity[];
   locations: Location[];
+  grade?: number;
 }
 
 export interface Period {

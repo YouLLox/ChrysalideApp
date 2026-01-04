@@ -161,6 +161,27 @@ const SyllabusView: React.FC = () => {
         </Typography>
 
         <Trailing>
+          {syllabus.grade !== undefined && (
+            <View
+              style={{
+                marginRight: 8,
+                backgroundColor: subjectColor + "20",
+                borderRadius: 8,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+              }}
+            >
+              <Typography
+                variant="body2"
+                color={subjectColor}
+                style={{ fontWeight: "bold" }}
+              >
+                {typeof syllabus.grade === "number"
+                  ? syllabus.grade.toFixed(2).replace(".00", "")
+                  : syllabus.grade}
+              </Typography>
+            </View>
+          )}
           <Papicons name="ChevronRight" size={18} color={colors.text + "44"} />
         </Trailing>
       </Item>
