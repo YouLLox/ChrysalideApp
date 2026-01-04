@@ -20,6 +20,7 @@ import TabHeaderTitle from '@/ui/components/TabHeaderTitle';
 import Typography from '@/ui/components/Typography';
 import adjust from '@/utils/adjustColor';
 import { getSubjectColor } from '@/utils/subjects/colors';
+import { getSubjectEmoji } from '@/utils/subjects/emoji';
 import { getSubjectName } from '@/utils/subjects/name';
 
 const SyllabusView: React.FC = () => {
@@ -130,14 +131,20 @@ const SyllabusView: React.FC = () => {
   // Memoized syllabus item component to avoid setState during render
   const SyllabusItem = React.memo(({ syllabus, ...props }: { syllabus: Syllabus } & any) => {
     const subjectColor = React.useMemo(
-      () => adjust(getSubjectColor(syllabus.name), theme.dark ? 0.2 : -0.4),
-      [syllabus.name, theme.dark]
+      () => adjust(getSubjectColor(syllabus.caption?.name || syllabus.name), theme.dark ? 0.2 : -0.4),
+      [syllabus.caption?.name, syllabus.name, theme.dark]
     );
-    const subjectName = React.useMemo(() => getSubjectName(syllabus.name), [syllabus.name]);
+    // Use caption?.name for lookup since that's what's registered in the store
+    const subjectName = React.useMemo(
+      () => getSubjectName(syllabus.caption?.name || syllabus.name),
+      [syllabus.caption?.name, syllabus.name]
+    );
 
-    // Use a static emoji to avoid setState during render
-    // The getSubjectEmoji function has side effects that can't be called during render
-    const subjectEmoji = "📚";
+    // Use getSubjectEmoji with caption.name since that's what's registered in the store
+    const subjectEmoji = React.useMemo(
+      () => getSubjectEmoji(syllabus.caption?.name || syllabus.name),
+      [syllabus.caption?.name, syllabus.name]
+    );
 
     const handlePress = useCallback(() => {
       router.push({
@@ -155,7 +162,7 @@ const SyllabusView: React.FC = () => {
         </Leading>
 
         <Typography variant="title" numberOfLines={1} color={subjectColor}>
-          {syllabus.caption?.name || subjectName}
+          {subjectName}
         </Typography>
         <Typography variant="caption" color="secondary">
           {syllabus.exams?.length || 0} {t("Syllabus_Exams", { count: syllabus.exams?.length || 0 })}
