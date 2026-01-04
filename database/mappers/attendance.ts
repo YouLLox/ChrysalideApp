@@ -21,7 +21,11 @@ export function mapAbsencesToShared(absences: Absence[], parent: Attendance): Sh
     reason: absence.reason,
     justified: absence.justified,
     createdByAccount: parent.createdByAccount,
-    kidName: parent.kidName
+    kidName: parent.kidName,
+    slotId: absence.slotId,
+    subjectName: absence.subjectName,
+    mandatory: absence.mandatory,
+    timeMissed: (absence.to - absence.from) / 1000 / 60,
   }));
 }
 

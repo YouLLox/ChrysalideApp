@@ -31,7 +31,7 @@ export default function AttendanceView() {
     const search = useLocalSearchParams();
     const currentPeriod = JSON.parse(String(search.currentPeriod)) as Period;
     const periods = JSON.parse(String(search.periods)) as Period[];
-    const attendancesFromSearch = JSON.parse(String(search.attendances)) as Attendance[];
+    const attendancesFromSearch = (JSON.parse(String(search.attendances)) as (Attendance | null)[]).filter(a => a !== null) as Attendance[];
 
     const [attendances, setAttendances] = useState<Attendance[]>(attendancesFromSearch);
     const [period, setPeriod] = useState<Period>(currentPeriod);
@@ -191,6 +191,9 @@ export default function AttendanceView() {
                                     </View>
                                   </Stack>
                                 </Trailing>
+                                <Typography style={{ fontWeight: "600" }}>
+                                  {absence.subjectName}
+                                </Typography>
                                 <Typography>
                                   {absence.reason || t("Attendance_NoReason")}
                                 </Typography>
@@ -283,11 +286,13 @@ export default function AttendanceView() {
                       error("Invalid Period")
                     }
 
-                    const manager = getManager()
-                    const attendancesFetched = await manager.getAttendanceForPeriod(selectedPeriod.name)
+                    if (selectedPeriod) {
+                      const manager = getManager()
+                      const attendancesFetched = await manager.getAttendanceForPeriod(selectedPeriod.name)
 
-                    setAttendances(attendancesFetched)
-                    setPeriod(selectedPeriod)
+                      setAttendances(attendancesFetched)
+                      setPeriod(selectedPeriod)
+                    }
                   }
                 }}
                 actions={
@@ -334,7 +339,7 @@ export default function AttendanceView() {
         )}
       </>
     )
-  } catch (err) {
+  } catch (err: any) {
     error(err.toString());
     return null;
   }

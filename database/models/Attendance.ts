@@ -72,6 +72,11 @@ export class Absence extends Model {
   @field('justified') justified: boolean;
   @field('attendanceId') attendanceId: string;
 	@field('kidName') kidName: string;
+
+  // New fields
+  @field('slotId') slotId: string;
+  @field('subjectName') subjectName: string;
+  @field('mandatory') mandatory: boolean;
   @relation('attendance', 'attendanceId') attendance: Attendance;
 }
 

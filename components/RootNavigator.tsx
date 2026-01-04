@@ -87,6 +87,13 @@ export function RootNavigator() {
         }}
       />
       <Stack.Screen
+        name="(modals)/login-attendance"
+        options={{
+          headerShown: false,
+          presentation: "formSheet",
+        }}
+      />
+      <Stack.Screen
         name="(modals)/news"
         options={{
           headerShown: true,

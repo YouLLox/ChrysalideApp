@@ -40,6 +40,9 @@ export interface Absence extends GenericInterface {
   reason?: string;
   timeMissed: number;
   justified: boolean;
+  slotId?: string;
+  subjectName?: string;
+  mandatory?: boolean;
 }
 
 export interface Punishment {

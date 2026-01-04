@@ -83,6 +83,9 @@ export async function addAttendanceToDatabase(
                 justified: absence.justified,
                 attendanceId: id,
                 kidName: absence.kidName,
+                slotId: absence.slotId,
+                subjectName: absence.subjectName,
+                mandatory: absence.mandatory,
               });
             });
           }
@@ -151,6 +154,9 @@ export async function addAttendanceToDatabase(
                 reason: absence.reason,
                 justified: absence.justified,
                 attendanceId: id,
+                slotId: absence.slotId,
+                subjectName: absence.subjectName,
+                mandatory: absence.mandatory,
               });
             });
           }

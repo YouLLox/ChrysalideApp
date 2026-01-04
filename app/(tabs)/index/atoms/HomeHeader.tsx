@@ -10,7 +10,7 @@ import { getCurrentPeriod } from '@/utils/grades/helper/period';
 
 import HomeHeaderButton, { HomeHeaderButtonItem } from '../components/HomeHeaderButton';
 import { useHomeHeaderData } from '../hooks/useHomeHeaderData';
-
+import AbsencesAPI from "@/services/absences";
 
 const HomeHeader = () => {
   const { t } = useTranslation();
@@ -26,6 +26,11 @@ const HomeHeader = () => {
         (absencesCount > 1 ? t("Home_Attendance_Button_Description_Number", { number: absencesCount }) : t("Home_Attendance_Button_Description_Singular"))
         : t("Home_Attendance_Button_Description_None"),
       onPress: () => {
+        if (!AbsencesAPI.isLoggedIn()) {
+          router.push("/(modals)/login-attendance");
+          return;
+        }
+
         router.push({
           pathname: "/(features)/attendance",
           params: {

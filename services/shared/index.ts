@@ -219,7 +219,10 @@ export class AccountManager {
       },
       {
         multiple: true,
-        fallback: async () => [await getAttendanceFromCache(period)],
+        fallback: async () => {
+          const res = await getAttendanceFromCache(period);
+          return res ? [res] : [];
+        },
         saveToCache: async (data: Attendance[]) => {
           await addAttendanceToDatabase(data, period);
         },
