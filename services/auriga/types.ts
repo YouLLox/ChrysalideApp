@@ -24,6 +24,7 @@ export interface Syllabus {
   activities: Activity[];
   locations: Location[];
   grade?: number;
+  matchedGrades?: (Grade & { weighting: number })[];
 }
 
 export interface Period {

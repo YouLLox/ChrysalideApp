@@ -1,5 +1,11 @@
 import { MMKV } from "react-native-mmkv";
 
+import { addSubjectsToDatabase } from "@/database/useSubject";
+import { useAccountStore } from "@/stores/account";
+import { registerSubjectColor } from "@/utils/subjects/colors";
+import { getSubjectEmoji } from "@/utils/subjects/emoji";
+import { cleanSubjectName } from "@/utils/subjects/utils";
+
 import {
   GRADES_PAYLOAD,
   SYLLABUS_PAYLOAD,
@@ -54,6 +60,44 @@ class AurigaAPI {
       const syllabus = await this.fetchAllSyllabus();
       storage.set("auriga_syllabus", JSON.stringify(syllabus));
       console.log(`Fetched ${syllabus.length} syllabus items.`);
+
+      // Register syllabus items as subjects in the database
+      const subjectsToAdd = syllabus.map((s: Syllabus) => ({
+        id: s.name || String(s.id),
+        name: s.caption?.name || s.name || String(s.id),
+        studentAverage: {
+          value: s.grade ?? 0,
+          disabled: s.grade === undefined,
+        },
+        classAverage: { value: 0, disabled: true },
+        maximum: { value: 0, disabled: true },
+        minimum: { value: 0, disabled: true },
+        outOf: { value: 20 },
+      }));
+
+      await addSubjectsToDatabase(subjectsToAdd);
+      console.log(`Registered ${syllabus.length} subjects in database.`);
+
+      // Register subjects in account store for customization UI
+      const store = useAccountStore.getState();
+      for (const s of syllabus) {
+        const subjectName = s.caption?.name || s.name || String(s.id);
+        const cleanedName = cleanSubjectName(subjectName);
+
+        // Register color (will be generated if not exists)
+        registerSubjectColor(subjectName);
+
+        // Get emoji (from subject format or default)
+        const emoji = getSubjectEmoji(subjectName);
+
+        // Set all three properties in account store
+        store.setSubjectName(cleanedName, subjectName);
+        store.setSubjectEmoji(cleanedName, emoji);
+        // Color is already set by registerSubjectColor
+      }
+      console.log(
+        `Registered ${syllabus.length} subjects in customization store.`
+      );
     } catch (e) {
       console.error("Failed to fetch syllabus:", e);
     }
@@ -84,13 +128,55 @@ class AurigaAPI {
   getAllSyllabus(): Syllabus[] {
     const data = storage.getString("auriga_syllabus");
     const syllabusList: Syllabus[] = data ? JSON.parse(data) : [];
-    const grades = this.getAllGrades();
+    const allGrades = this.getAllGrades();
 
     return syllabusList.map(s => {
-      const grade = grades.find(g => g.code === s.name);
+      // Get the subject code from syllabus name (remove file extension if present)
+      const subjectCode = s.name.replace(/\.[^.]+$/, "");
+
+      // Find all grades that belong to this subject (grade.name starts with subject code)
+      const matchedGrades = allGrades.filter(g =>
+        g.name.startsWith(subjectCode + "_")
+      );
+
+      // Match each grade with its exam weighting from the syllabus
+      const gradesWithWeightings = matchedGrades.map(g => {
+        // Extract exam type from grade name (e.g., "..._EXA_1" -> "EXA")
+        const examTypeMatch = g.name
+          .replace(subjectCode + "_", "")
+          .split("_")[0];
+
+        // Find matching exam in syllabus to get weighting
+        const matchingExam = s.exams?.find(
+          e => e.type?.toUpperCase() === examTypeMatch?.toUpperCase()
+        );
+
+        return {
+          ...g,
+          weighting: matchingExam?.weighting ?? 1,
+        };
+      });
+
+      // Calculate weighted average if there are matched grades
+      let weightedAverage: number | undefined;
+      if (gradesWithWeightings.length > 0) {
+        const totalWeight = gradesWithWeightings.reduce(
+          (sum, g) => sum + g.weighting,
+          0
+        );
+        if (totalWeight > 0) {
+          weightedAverage =
+            gradesWithWeightings.reduce(
+              (sum, g) => sum + g.grade * g.weighting,
+              0
+            ) / totalWeight;
+        }
+      }
+
       return {
         ...s,
-        grade: grade ? grade.grade : undefined,
+        matchedGrades: gradesWithWeightings,
+        grade: weightedAverage,
       };
     });
   }

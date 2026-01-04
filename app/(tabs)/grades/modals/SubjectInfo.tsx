@@ -23,31 +23,31 @@ const SubjectInfo = () => {
   const subjectName = getSubjectName(subject?.name);
   const subjectEmoji = getSubjectEmoji(subject?.name);
 
-  const outOf = subject.outOf.value;
+  const outOf = subject?.outOf?.value ?? 20;
 
   const averagesData = [
     {
       title: i18n.t("SubjectInfo_ClassAverage_Label"),
       subtitle: i18n.t("SubjectInfo_ClassAverage_Description"),
-      disabled: subject.classAverage.disabled,
-      value: subject.classAverage.value.toFixed(2),
-      status: subject.classAverage.status,
+      disabled: subject?.classAverage?.disabled ?? true,
+      value: subject?.classAverage?.value?.toFixed(2) ?? "N/A",
+      status: subject?.classAverage?.status ?? "N/A",
       icon: "GraduationHat",
     },
     {
       title: i18n.t("SubjectInfo_MaxAverage_Label"),
       subtitle: i18n.t("SubjectInfo_MaxAverage_Description"),
-      disabled: subject.maximum.disabled,
-      value: subject.maximum.value.toFixed(2),
-      status: subject.maximum.status,
+      disabled: subject?.maximum?.disabled ?? true,
+      value: subject?.maximum?.value?.toFixed(2) ?? "N/A",
+      status: subject?.maximum?.status ?? "N/A",
       icon: "ArrowRightUp",
     },
     {
       title: i18n.t("SubjectInfo_MinAverage_Label"),
       subtitle: i18n.t("SubjectInfo_MinAverage_Description"),
-      disabled: subject.minimum.disabled,
-      value: subject.minimum.value.toFixed(2),
-      status: subject.minimum.status,
+      disabled: subject?.minimum?.disabled ?? true,
+      value: subject?.minimum?.value?.toFixed(2) ?? "N/A",
+      status: subject?.minimum?.status ?? "N/A",
       icon: "Minus",
     }
   ]

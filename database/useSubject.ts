@@ -21,7 +21,10 @@ export async function addSubjectsToDatabase(
 
   for (const item of subjects) {
     const id = generateId(item.name);
-    const existingForAccount = await db.get('subjects').query(Q.where('subjectId', id)).fetch();
+    const existingForAccount = await db
+      .get("subjects")
+      .query(Q.where("subjectId", id))
+      .fetch();
 
     if (existingForAccount.length === 0) {
       subjectsToCreate.push({ id, item });
@@ -33,18 +36,17 @@ export async function addSubjectsToDatabase(
       db,
       async () => {
         const promises = subjectsToCreate.map(({ id, item }) =>
-          db.get('subjects').create((record: Model) => {
+          db.get("subjects").create((record: Model) => {
             const subject = record as Subject;
-            Object.assign(subject, {
-              subjectId: id,
-              name: item.name,
-              studentAverage: JSON.stringify(item.studentAverage),
-              classAverage: JSON.stringify(item.classAverage),
-              maximum: JSON.stringify(item.maximum),
-              minimum: JSON.stringify(item.minimum),
-              outOf: JSON.stringify(item.outOf),
-              periodGradeId: periodGradeId ?? null
-            });
+            // Assign to the TypeScript property names (matching @field decorators)
+            subject.subjectId = id;
+            subject.name = item.name;
+            subject.studentAverageRaw = JSON.stringify(item.studentAverage);
+            subject.classAverageRaw = JSON.stringify(item.classAverage);
+            subject.maximumRaw = JSON.stringify(item.maximum);
+            subject.minimumRaw = JSON.stringify(item.minimum);
+            subject.outOfRaw = JSON.stringify(item.outOf);
+            subject.periodGradeId = periodGradeId;
           })
         );
         await Promise.all(promises);

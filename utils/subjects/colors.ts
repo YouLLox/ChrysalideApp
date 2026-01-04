@@ -2,28 +2,55 @@ import { useAccountStore } from "@/stores/account";
 
 import { cleanSubjectName } from "./utils";
 
+/**
+ * Registers a subject with a persistent color if not already set.
+ * Should be called when syllabus is first loaded.
+ */
+export function registerSubjectColor(subject: string): string {
+  const cleanedName = cleanSubjectName(subject);
+  const lastUsedAccount = useAccountStore.getState().lastUsedAccount;
+  const existingColor = useAccountStore
+    .getState()
+    .accounts.find(a => a.id === lastUsedAccount)?.customisation?.subjects?.[
+    cleanedName
+  ]?.color;
+
+  // If already has a color, return it
+  if (existingColor && existingColor !== "") {
+    return existingColor;
+  }
+
+  // Get already used colors to avoid duplicates
+  const subjects = useAccountStore
+    .getState()
+    .accounts.find(a => a.id === lastUsedAccount)?.customisation?.subjects;
+  const usedColors = Object.values(subjects ?? {})
+    .map(item => item.color)
+    .filter(Boolean);
+
+  // Pick a color and persist it
+  const newColor = getRandomColor(usedColors);
+  useAccountStore.getState().setSubjectColor(cleanedName, newColor);
+
+  return newColor;
+}
+
 export function getSubjectColor(subject: string): string {
   const cleanedName = cleanSubjectName(subject);
   const lastUsedAccount = useAccountStore.getState().lastUsedAccount;
   const subjectProperties = useAccountStore
     .getState()
-    .accounts.find(a => a.id === lastUsedAccount)?.customisation?.subjects[
+    .accounts.find(a => a.id === lastUsedAccount)?.customisation?.subjects?.[
     cleanedName
   ];
-  if (subjectProperties && subjectProperties.color !== "") {
-    if (subjectProperties.color === undefined) {
-      return Colors[0];
-    }
+
+  // If subject has a color, return it
+  if (subjectProperties?.color && subjectProperties.color !== "") {
     return subjectProperties.color;
   }
 
-  const subjects = useAccountStore
-    .getState()
-    .accounts.find(a => a.id === lastUsedAccount)?.customisation?.subjects;
-  const ignoredColors = Object.values(subjects ?? {}).map(item => item.color);
-
-  const color = getRandomColor(ignoredColors);
-  return color;
+  // Fallback: return first color (don't generate random without persisting)
+  return Colors[0];
 }
 
 export function getRandomColor(ignoredColors?: string[]): string {
