@@ -1,7 +1,7 @@
 import { Papicons } from '@getpapillon/papicons';
 import { LegendList } from '@legendapp/list';
 import { MenuView } from '@react-native-menu/menu';
-import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import { useNavigation, useRouter } from 'expo-router';
 import { t } from 'i18next';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -123,10 +123,14 @@ const GradesView: React.FC = () => {
   useEffect(() => {
     const unsubscribe = subscribeManagerUpdate((updatedManager) => {
       fetchPeriods(updatedManager);
+      // Also refetch grades when manager is updated (e.g., after WebView auth)
+      if (currentPeriod) {
+        fetchGradesForPeriod(currentPeriod, updatedManager);
+      }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentPeriod]);
 
   // Obtention des notes
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -170,14 +174,8 @@ const GradesView: React.FC = () => {
     fetchGradesForPeriod(currentPeriod);
   }, [currentPeriod]);
 
-  // Refetch grades when screen gains focus (after WebView refresh)
-  useFocusEffect(
-    useCallback(() => {
-      if (currentPeriod) {
-        fetchGradesForPeriod(currentPeriod);
-      }
-    }, [currentPeriod])
-  );
+  // Note: Removed useFocusEffect that was causing refetch on every focus
+  // (including from modals). The subscribeManagerUpdate handles sync updates.
 
   const grades = useMemo(() => {
     return subjects.flatMap((subject) => subject.grades);

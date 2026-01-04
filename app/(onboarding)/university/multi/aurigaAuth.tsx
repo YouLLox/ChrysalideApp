@@ -16,6 +16,7 @@ import Typography from "@/ui/components/Typography";
 import ViewContainer from "@/ui/components/ViewContainer";
 
 import AurigaAPI from "@/services/auriga";
+import { initializeAccountManager } from "@/services/shared";
 import { useAccountStore } from "@/stores/account";
 import { Account, Services } from "@/stores/account/types";
 
@@ -229,6 +230,9 @@ export default function AurigaLoginScreen() {
 
             addAccount(newAccount);
             setLastUsedAccount(accountId);
+
+            // Initialize the account manager so grades can be fetched
+            await initializeAccountManager();
 
             alert.showAlert({
                 title: "Connexion réussie",

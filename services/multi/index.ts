@@ -140,25 +140,34 @@ export class Multi implements SchoolServicePlugin {
 
     // For each grade, find matching syllabus and group by syllabus display name
     grades.forEach(g => {
-      // Extract UE+subject code from grade name
+      // Extract UE+[parcours]+subject code from grade name
+      // Format: 2526_I_INF_FISE_S03_CN_PC_PSE_EXA_1 -> extract "CN_PC_PSE"
       // Format: 2526_I_INF_FISE_S03_AG_COM3_EXA_1 -> extract "AG_COM3"
-      // Pattern: Remove prefix (YYYY_X_XXX_XXXX_SXX_) and suffix (_EXA_1)
+      // Structure: [prefix 5 parts]_[UE]_[optional PC/PA]_[SUBJECT]_[TYPE]_[NUM]
       const gradeNameParts = g.name.split("_");
-      // Find the UE code (2 letters) and subject code parts
-      // Typically: [year, letter, school, program, semester, UE, SUBJECT, TYPE, NUM]
-      // We want UE_SUBJECT (e.g., AG_COM3)
-      const ueIndex = gradeNameParts.findIndex(
-        part => /^[A-Z]{2}$/.test(part) && gradeNameParts.indexOf(part) >= 5
-      );
-      const gradeSubjectCode =
-        ueIndex >= 0
-          ? `${gradeNameParts[ueIndex]}_${gradeNameParts[ueIndex + 1]}`
-          : "";
 
-      // Find matching syllabus by checking if both contain the same UE+subject code
+      // Find the UE code: first 2-letter code after the 5-part prefix (index 5)
+      // The UE is always at position 5 (index 5)
+      const ueIndex = 5;
+
+      // Check if next part after UE is PC or PA (parcours)
+      const hasParcours =
+        gradeNameParts[ueIndex + 1] === "PC" ||
+        gradeNameParts[ueIndex + 1] === "PA";
+
+      // Build the match code: UE + (optional parcours) + SUBJECT
+      let gradeSubjectCode = "";
+      if (hasParcours) {
+        // Format: UE_PC_SUBJECT (e.g., CN_PC_PSE)
+        gradeSubjectCode = `${gradeNameParts[ueIndex]}_${gradeNameParts[ueIndex + 1]}_${gradeNameParts[ueIndex + 2]}`;
+      } else {
+        // Format: UE_SUBJECT (e.g., AG_COM3)
+        gradeSubjectCode = `${gradeNameParts[ueIndex]}_${gradeNameParts[ueIndex + 1]}`;
+      }
+
+      // Find matching syllabus by checking if it contains the same subject code
       const matchingSyllabus = syllabusList.find(s => {
         const syllabusName = s.name.replace(/\.[^.]+$/, ""); // Remove file extension
-        // Check if syllabus contains the same UE_SUBJECT code
         return gradeSubjectCode && syllabusName.includes(gradeSubjectCode);
       });
 
