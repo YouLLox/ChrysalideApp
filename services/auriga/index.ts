@@ -126,12 +126,31 @@ class AurigaAPI {
             // Extract exam type from name (e.g., "..._EXA_1" -> "EXA_1")
             const examPart = g.name.replace(syllabusCode + "_", "");
 
+            // Match with syllabus exam to get descriptive name
+            const parts = examPart.split("_");
+            const type = parts[0];
+            const index = parts[1] ? parseInt(parts[1], 10) : 1;
+
+            const matchingExams =
+              syllabus.exams?.filter(
+                e => e.type?.toUpperCase() === type.toUpperCase()
+              ) || [];
+            const matchingExam = matchingExams[index - 1];
+
+            // Use descriptive name if available
+            const examDescription =
+              typeof matchingExam?.description === "string"
+                ? matchingExam.description
+                : matchingExam?.description?.fr ||
+                  matchingExam?.description?.en;
+
             return {
               id: g.code,
               createdByAccount: "auriga",
               subjectId: syllabusCode,
               subjectName: displayName,
-              description: examPart || g.type,
+              description:
+                examDescription || matchingExam?.typeName || examPart || g.type,
               givenAt: new Date(),
               outOf: { value: 20 },
               coefficient: 1,
@@ -189,19 +208,30 @@ class AurigaAPI {
 
       // Match each grade with its exam weighting from the syllabus
       const gradesWithWeightings = matchedGrades.map(g => {
-        // Extract exam type from grade name (e.g., "..._EXA_1" -> "EXA")
-        const examTypeMatch = g.name
-          .replace(subjectCode + "_", "")
-          .split("_")[0];
+        // Extract exam type from grade name (e.g., "..._EXA_1" -> "EXA_1")
+        const examPart = g.name.replace(subjectCode + "_", "");
 
         // Find matching exam in syllabus to get weighting
-        const matchingExam = s.exams?.find(
-          e => e.type?.toUpperCase() === examTypeMatch?.toUpperCase()
-        );
+        const parts = examPart.split("_");
+        const type = parts[0];
+        const index = parts[1] ? parseInt(parts[1], 10) : 1;
+
+        const matchingExams =
+          s.exams?.filter(e => e.type?.toUpperCase() === type.toUpperCase()) ||
+          [];
+        const matchingExam = matchingExams[index - 1];
+
+        // Use descriptive name if available
+        const examDescription =
+          typeof matchingExam?.description === "string"
+            ? matchingExam.description
+            : matchingExam?.description?.fr || matchingExam?.description?.en;
 
         return {
           ...g,
           weighting: matchingExam?.weighting ?? 1,
+          description:
+            examDescription || matchingExam?.typeName || examPart || g.type,
         };
       });
 

@@ -172,9 +172,6 @@ export class Multi implements SchoolServicePlugin {
         // Extract exam part from name for description
         const syllabusCode = matchingSyllabus.name.replace(/\.[^.]+$/, "");
         const examPart = g.name.replace(syllabusCode + "_", "");
-        if (examPart) {
-          description = examPart.replace(/_/g, " ");
-        }
 
         // Find matching exam in syllabus by exam type code
         const matchingExam = matchingSyllabus.exams?.find(
@@ -182,6 +179,27 @@ export class Multi implements SchoolServicePlugin {
         );
         const availableExamTypes =
           matchingSyllabus.exams?.map(e => e.type).join(", ") || "none";
+
+        // Use the syllabus exam's typeName for description if available
+        if (matchingExam) {
+          const examDescription =
+            typeof matchingExam.description === "string"
+              ? matchingExam.description
+              : matchingExam.description?.fr || matchingExam.description?.en;
+
+          if (examDescription && matchingExam.typeName) {
+            // Combine typeName and description
+            description = `${matchingExam.typeName} - ${examDescription}`;
+          } else if (examDescription) {
+            description = examDescription;
+          } else if (matchingExam.typeName) {
+            description = matchingExam.typeName;
+          } else if (examPart) {
+            description = examPart.replace(/_/g, " ");
+          }
+        } else if (examPart) {
+          description = examPart.replace(/_/g, " ");
+        }
 
         if (matchingExam && matchingExam.weighting) {
           // Convert percentage to decimal (e.g., 30 -> 0.30)
