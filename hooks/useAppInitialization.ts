@@ -1,18 +1,18 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
-import Countly from 'countly-sdk-react-native-bridge';
-import CountlyConfig from 'countly-sdk-react-native-bridge/CountlyConfig';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { AppState, AppStateStatus } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
+import Countly from "countly-sdk-react-native-bridge";
+import CountlyConfig from "countly-sdk-react-native-bridge/CountlyConfig";
 
-import { initializeDatabaseOnStartup } from '@/database/utils/initialization';
-import { initializeAccountManager } from '@/services/shared';
-import { useSettingsStore } from '@/stores/settings';
-import i18n from '@/utils/i18n';
-import { checkConsent } from '@/utils/logger/consent';
-import { log, warn } from '@/utils/logger/logger';
-import ModelManager from '@/utils/magic/ModelManager';
-import { FONT_CONFIG } from '@/constants/LayoutScreenOptions';
+import { initializeDatabaseOnStartup } from "@/database/utils/initialization";
+import { initializeAccountManager } from "@/services/shared";
+import { useSettingsStore } from "@/stores/settings";
+import i18n from "@/utils/i18n";
+import { checkConsent } from "@/utils/logger/consent";
+import { log, warn } from "@/utils/logger/logger";
+import ModelManager from "@/utils/magic/ModelManager";
+import { FONT_CONFIG } from "@/constants/LayoutScreenOptions";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -20,7 +20,11 @@ SplashScreen.preventAutoHideAsync();
 let secrets = { APP_KEY: "", SALT: "", SERVER_URL: "" };
 
 try {
-  secrets = require('../secrets.json') ?? { APP_KEY: "", SALT: "", SERVER_URL: "" };
+  secrets = require("../secrets.json") ?? {
+    APP_KEY: "",
+    SALT: "",
+    SERVER_URL: "",
+  };
 } catch {
   warn("No secrets.json file found, Countly will not be initialized properly.");
 }
@@ -32,24 +36,28 @@ const SERVER_URL = secrets.SERVER_URL ?? "https://analytics.papillon.bzh";
 export function useAppInitialization() {
   const [fontsLoaded, fontsError] = useFonts(FONT_CONFIG);
   const [isDatabaseReady, setIsDatabaseReady] = useState(false);
-  
+
   // Settings
-  const customLanguage = useSettingsStore(state => state.personalization.language);
-  const magicEnabled = useSettingsStore(state => state.personalization.magicEnabled);
+  const customLanguage = useSettingsStore(
+    state => state.personalization.language
+  );
+  const magicEnabled = useSettingsStore(
+    state => state.personalization.magicEnabled
+  );
   const selectedTheme = useSettingsStore(state => state.personalization.theme);
   const mutateProperty = useSettingsStore(state => state.mutateProperty);
 
   // Initialize Theme if not set
   if (!selectedTheme) {
-    mutateProperty('personalization', {
-      theme: "auto"
+    mutateProperty("personalization", {
+      theme: "auto",
     });
   }
 
   // Language Initialization
   useEffect(() => {
     if (customLanguage) {
-      i18n.changeLanguage(customLanguage).catch((error) => {
+      i18n.changeLanguage(customLanguage).catch(error => {
         console.error("Error changing language:", error);
       });
     }
@@ -60,6 +68,10 @@ export function useAppInitialization() {
     async function initDatabase() {
       try {
         await initializeDatabaseOnStartup();
+
+        // Load Auriga data from WatermelonDB into MMKV cache after database is ready
+        const AurigaAPI = (await import("@/services/auriga")).default;
+        await AurigaAPI.initializeFromDatabase();
       } catch (err) {
         warn(`Database initialization failed: ${err}`);
       } finally {
@@ -75,8 +87,11 @@ export function useAppInitialization() {
   const [lastBackground, setLastBackground] = useState<Date | null>(null);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (appState.current.match(/inactive|background/) && nextAppState === "active") {
+    const subscription = AppState.addEventListener("change", nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
         if (lastBackground) {
           const now = new Date();
           const durationMs = now.getTime() - lastBackground.getTime();
@@ -120,7 +135,16 @@ export function useAppInitialization() {
 
       if (consent.given) {
         if (consent.advanced) {
-          countlyConfig.giveConsent(["sessions", "crashes", "users", "location", "attribution", "push", "star-rating", "feedback"]);
+          countlyConfig.giveConsent([
+            "sessions",
+            "crashes",
+            "users",
+            "location",
+            "attribution",
+            "push",
+            "star-rating",
+            "feedback",
+          ]);
         }
 
         if (consent.optional) {
@@ -142,7 +166,9 @@ export function useAppInitialization() {
 
   // Error Handling for Fonts
   const handleError = useCallback(() => {
-    if (fontsError) { throw fontsError; }
+    if (fontsError) {
+      throw fontsError;
+    }
   }, [fontsError]);
 
   useEffect(handleError, [handleError]);
@@ -162,6 +188,6 @@ export function useAppInitialization() {
   return {
     isAppReady: isDatabaseReady && fontsLoaded,
     fontsLoaded,
-    fontsError
+    fontsError,
   };
 }

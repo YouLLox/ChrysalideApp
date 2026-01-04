@@ -39,6 +39,42 @@ class AurigaAPI {
   }
 
   /**
+   * Initializes MMKV cache from WatermelonDB if empty.
+   * Should be called at app startup to restore persisted data.
+   */
+  async initializeFromDatabase() {
+    const { getDatabaseInstance } = await import("@/database/DatabaseProvider");
+    const { Grade } = await import("@/database/models/Grades");
+
+    // Check if MMKV cache is empty
+    const cachedGrades = storage.getString("auriga_grades");
+    if (!cachedGrades || cachedGrades === "[]") {
+      try {
+        const db = getDatabaseInstance();
+        const dbGrades = await db.get("grades").query().fetch();
+
+        if (dbGrades.length > 0) {
+          // Convert WatermelonDB records to Auriga Grade format
+          const grades: Grade[] = dbGrades.map((g: any) => ({
+            code: g.gradeId || g.id,
+            type: g.description || "",
+            name: g.subjectName || "",
+            semester: 0, // Will be extracted from name
+            grade: JSON.parse(g.studentScoreRaw || "{}").value || 0,
+          }));
+
+          storage.set("auriga_grades", JSON.stringify(grades));
+          console.log(
+            `Restored ${grades.length} grades from WatermelonDB to MMKV cache.`
+          );
+        }
+      } catch (e) {
+        console.warn("Failed to restore grades from WatermelonDB:", e);
+      }
+    }
+  }
+
+  /**
    * Syncs all data from Auriga (Grades, Syllabus) and stores it in local storage.
    */
   async sync() {
