@@ -46,6 +46,17 @@ export function GetSupportedServices(redirect: (path: { pathname: string, option
       variant: 'primary' as const,
       style: { backgroundColor: theme.dark ? colors.border : "black" },
     },
+    {
+      name: "izly",
+      title: "Izly",
+      type: "other",
+      image: require("@/assets/images/izly.png"),
+      onPress: () => {
+        redirect({ pathname: '../izly/credentials' });
+      },
+      variant: 'primary' as const,
+      style: { backgroundColor: theme.dark ? colors.border : "black" },
+    }
   ]
 }
 

@@ -107,7 +107,7 @@ export default function TurboSelfLoginWithCredentials() {
     });
     store.setLastUsedAccount(id);
 
-    return router.push({
+    return router.replace({
       pathname: "/(onboarding)/end/color",
       params: {
         accountId: id,

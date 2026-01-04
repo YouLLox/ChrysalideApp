@@ -29,7 +29,7 @@ export default function OnboardingLayout() {
                     name="serviceSelection"
                     options={{ ...newScreenOptions }}
                 />
-                <Stack.Screen
+                {/* <Stack.Screen
                     name="school/method"
                     options={{ ...newScreenOptions }}
                     initialParams={{ service: Services.PRONOTE }}
@@ -43,7 +43,7 @@ export default function OnboardingLayout() {
                     name="school/search"
                     options={{ ...newScreenOptions }}
                     initialParams={{ service: Services.PRONOTE }}
-                />
+                /> */}
                 <Stack.Screen
                     name="end/color"
                     options={{ ...newScreenOptions }}
@@ -61,7 +61,7 @@ export default function OnboardingLayout() {
                     name="university/lannion/credentials"
                     options={{ ...newScreenOptions }}
                 />
-                <Stack.Screen
+                {/* <Stack.Screen
                     name="pronote/url"
                     options={{ ...newScreenOptions }}
                 />
@@ -79,13 +79,13 @@ export default function OnboardingLayout() {
                     name="ecoledirecte/credentials"
                     options={{ ...newScreenOptions }}
                     initialParams={{ url: "", previousPage: "map" }}
-                />
+                /> */}
                 <Stack.Screen
                     name="izly/credentials"
                     options={{ ...newScreenOptions }}
                     initialParams={{ url: "", previousPage: "map" }}
                 />
-                <Stack.Screen
+                {/* <Stack.Screen
                     name="pronote/qrcode"
                     options={{ ...newScreenOptions }}
                 />
@@ -118,7 +118,7 @@ export default function OnboardingLayout() {
                     name="skolengo/webview"
                     options={{ ...newScreenOptions }}
                     initialParams={{ ref: {} }}
-                />
+                /> */}
                 <Stack.Screen
                     name="university/appscho/list"
                     options={{ ...newScreenOptions }}

@@ -77,6 +77,7 @@
     "expo-web-browser": "~15.0.10",
     "ezly": "^1.4.3",
     "fflate": "^0.8.2",
+    "gradle": "^1.2.4",
     "htmlparser2": "^10.0.0",
     "i18next": "^25.2.1",
     "ical.js": "^2.2.1",
