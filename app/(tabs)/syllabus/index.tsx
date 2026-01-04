@@ -1,8 +1,8 @@
 import { Papicons } from '@getpapillon/papicons';
 import { LegendList } from '@legendapp/list';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, RefreshControl, Text, View } from 'react-native';
 import { useBottomTabBarHeight } from 'react-native-bottom-tabs';
@@ -43,9 +43,12 @@ const SyllabusView: React.FC = () => {
   ];
 
   // Load syllabus data
-  useEffect(() => {
-    loadSyllabus();
-  }, []);
+  // Load syllabus data
+  useFocusEffect(
+    useCallback(() => {
+      loadSyllabus();
+    }, [])
+  );
 
   const loadSyllabus = async () => {
     setLoading(true);
@@ -61,7 +64,10 @@ const SyllabusView: React.FC = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadSyllabus();
+    router.push({
+      pathname: "/(onboarding)/university/multi/aurigaAuth",
+      params: { refresh: "true" },
+    } as any);
     setIsRefreshing(false);
   };
 

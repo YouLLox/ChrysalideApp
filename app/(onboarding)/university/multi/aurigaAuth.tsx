@@ -1,7 +1,6 @@
-
 import { useTheme } from "@react-navigation/native";
-import { Stack, useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { Stack, useRouter, useLocalSearchParams } from "expo-router";
+import React, { useRef, useState, useEffect } from "react";
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, WebViewNavigation } from 'react-native-webview';
@@ -33,6 +32,16 @@ export default function AurigaLoginScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { addAccount, setLastUsedAccount } = useAccountStore();
+
+    const params = useLocalSearchParams();
+    const isRefresh = params.refresh === "true";
+
+    React.useEffect(() => {
+        if (isRefresh) {
+            setShowWebView(true);
+            setHasInjected(false);
+        }
+    }, [isRefresh]);
 
     // Track if we've already injected to avoid spamming
     const [hasInjected, setHasInjected] = useState(false);
@@ -228,7 +237,11 @@ export default function AurigaLoginScreen() {
                 color: "#00D600"
             });
 
-            router.push("/(tabs)" as any);
+            if (isRefresh) {
+                router.back();
+            } else {
+                router.push("/(tabs)" as any);
+            }
 
         } catch (error) {
             console.error("Auriga Sync Error:", error);
