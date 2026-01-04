@@ -44,12 +44,15 @@ class AurigaAPI {
   async sync() {
     console.log("Starting Auriga Sync...");
 
+    let fetchedGrades: Grade[] = [];
+    let fetchedSyllabus: Syllabus[] = [];
+
     // 1. Fetch Grades
     console.log("Fetching Grades...");
     try {
-      const grades = await this.fetchAllGrades();
-      storage.set("auriga_grades", JSON.stringify(grades));
-      console.log(`Fetched ${grades.length} grades.`);
+      fetchedGrades = await this.fetchAllGrades();
+      storage.set("auriga_grades", JSON.stringify(fetchedGrades));
+      console.log(`Fetched ${fetchedGrades.length} grades.`);
     } catch (e) {
       console.error("Failed to fetch grades:", e);
     }
@@ -57,12 +60,12 @@ class AurigaAPI {
     // 2. Fetch Syllabus
     console.log("Fetching Syllabus...");
     try {
-      const syllabus = await this.fetchAllSyllabus();
-      storage.set("auriga_syllabus", JSON.stringify(syllabus));
-      console.log(`Fetched ${syllabus.length} syllabus items.`);
+      fetchedSyllabus = await this.fetchAllSyllabus();
+      storage.set("auriga_syllabus", JSON.stringify(fetchedSyllabus));
+      console.log(`Fetched ${fetchedSyllabus.length} syllabus items.`);
 
       // Register syllabus items as subjects in the database
-      const subjectsToAdd = syllabus.map((s: Syllabus) => ({
+      const subjectsToAdd = fetchedSyllabus.map((s: Syllabus) => ({
         id: s.name || String(s.id),
         name: s.caption?.name || s.name || String(s.id),
         studentAverage: {
@@ -76,11 +79,11 @@ class AurigaAPI {
       }));
 
       await addSubjectsToDatabase(subjectsToAdd);
-      console.log(`Registered ${syllabus.length} subjects in database.`);
+      console.log(`Registered ${fetchedSyllabus.length} subjects in database.`);
 
       // Register subjects in account store for customization UI
       const store = useAccountStore.getState();
-      for (const s of syllabus) {
+      for (const s of fetchedSyllabus) {
         const subjectName = s.caption?.name || s.name || String(s.id);
         const cleanedName = cleanSubjectName(subjectName);
 
@@ -93,13 +96,58 @@ class AurigaAPI {
         // Set all three properties in account store
         store.setSubjectName(cleanedName, subjectName);
         store.setSubjectEmoji(cleanedName, emoji);
-        // Color is already set by registerSubjectColor
       }
       console.log(
-        `Registered ${syllabus.length} subjects in customization store.`
+        `Registered ${fetchedSyllabus.length} subjects in customization store.`
       );
     } catch (e) {
       console.error("Failed to fetch syllabus:", e);
+    }
+
+    // 3. Match grades to subjects and save to database
+    console.log("Matching grades with subjects...");
+    try {
+      const { addGradesToDatabase } = await import("@/database/useGrades");
+
+      // Group grades by their matching syllabus
+      for (const syllabus of fetchedSyllabus) {
+        const syllabusCode = syllabus.name.replace(/\.[^.]+$/, ""); // Remove file extension
+        const displayName =
+          syllabus.caption?.name || syllabus.name || String(syllabus.id);
+
+        // Find all grades belonging to this syllabus
+        const matchingGrades = fetchedGrades.filter(g =>
+          g.name.startsWith(syllabusCode + "_")
+        );
+
+        if (matchingGrades.length > 0) {
+          // Convert to SharedGrade format for database
+          const gradesToSave = matchingGrades.map(g => {
+            // Extract exam type from name (e.g., "..._EXA_1" -> "EXA_1")
+            const examPart = g.name.replace(syllabusCode + "_", "");
+
+            return {
+              id: g.code,
+              createdByAccount: "auriga",
+              subjectId: syllabusCode,
+              subjectName: displayName,
+              description: examPart || g.type,
+              givenAt: new Date(),
+              outOf: { value: 20 },
+              coefficient: 1,
+              studentScore: { value: g.grade },
+              averageScore: { value: 0, disabled: true },
+              minScore: { value: 0, disabled: true },
+              maxScore: { value: 0, disabled: true },
+            };
+          });
+
+          await addGradesToDatabase(gradesToSave, displayName);
+        }
+      }
+      console.log(`Matched and saved grades to subjects.`);
+    } catch (e) {
+      console.error("Failed to match grades with subjects:", e);
     }
 
     return {

@@ -1,8 +1,8 @@
 import { Papicons } from '@getpapillon/papicons';
 import { LegendList } from '@legendapp/list';
 import { MenuView } from '@react-native-menu/menu';
-import { useTheme } from '@react-navigation/native';
-import { useNavigation } from 'expo-router';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { useNavigation, useRouter } from 'expo-router';
 import { t } from 'i18next';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dimensions, Platform, RefreshControl, View } from 'react-native';
@@ -170,6 +170,15 @@ const GradesView: React.FC = () => {
     fetchGradesForPeriod(currentPeriod);
   }, [currentPeriod]);
 
+  // Refetch grades when screen gains focus (after WebView refresh)
+  useFocusEffect(
+    useCallback(() => {
+      if (currentPeriod) {
+        fetchGradesForPeriod(currentPeriod);
+      }
+    }, [currentPeriod])
+  );
+
   const grades = useMemo(() => {
     return subjects.flatMap((subject) => subject.grades);
   }, [subjects]);
@@ -187,34 +196,34 @@ const GradesView: React.FC = () => {
     });
 
     switch (sortMethod) {
-    case "alphabetical":
-      subjectsCopy.sort((a, b) => {
-        const nameA = getSubjectName(a.name).toLowerCase();
-        const nameB = getSubjectName(b.name).toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-      break;
+      case "alphabetical":
+        subjectsCopy.sort((a, b) => {
+          const nameA = getSubjectName(a.name).toLowerCase();
+          const nameB = getSubjectName(b.name).toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        break;
 
-    case "averages":
-      subjectsCopy.sort((a, b) => {
-        const aAvg = a.studentAverage.value;
-        const bAvg = b.studentAverage.value;
-        return bAvg - aAvg;
-      });
-      break;
+      case "averages":
+        subjectsCopy.sort((a, b) => {
+          const aAvg = a.studentAverage.value;
+          const bAvg = b.studentAverage.value;
+          return bAvg - aAvg;
+        });
+        break;
 
-    default:
-      subjectsCopy.sort((a, b) => {
-        const aLatestGrade = (a.grades ?? [])[0];
-        const bLatestGrade = (b.grades ?? [])[0];
+      default:
+        subjectsCopy.sort((a, b) => {
+          const aLatestGrade = (a.grades ?? [])[0];
+          const bLatestGrade = (b.grades ?? [])[0];
 
-        if (!aLatestGrade && !bLatestGrade) { return 0; }
-        if (!aLatestGrade) { return 1; }
-        if (!bLatestGrade) { return -1; }
+          if (!aLatestGrade && !bLatestGrade) { return 0; }
+          if (!aLatestGrade) { return 1; }
+          if (!bLatestGrade) { return -1; }
 
-        return (bLatestGrade.givenAt?.getTime() ?? 0) - (aLatestGrade.givenAt?.getTime() ?? 0);
-      });
-      break;
+          return (bLatestGrade.givenAt?.getTime() ?? 0) - (aLatestGrade.givenAt?.getTime() ?? 0);
+        });
+        break;
     }
 
     return subjectsCopy;
@@ -251,15 +260,17 @@ const GradesView: React.FC = () => {
   }, [searchText, sortedSubjects]);
 
   // Refresh
+  const router = useRouter();
+
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-
-    if (periods.length === 0) {
-      fetchPeriods();
-    }
-
-    fetchGradesForPeriod(currentPeriod);
-  }, [currentPeriod, periods]);
+    // Navigate to WebView for token refresh (like syllabus tab)
+    router.push({
+      pathname: "/(onboarding)/university/multi/aurigaAuth",
+      params: { refresh: "true" },
+    } as any);
+    setIsRefreshing(false);
+  }, [router]);
 
   const renderItem = useCallback(({ item }: { item: Subject }) => {
     const subject = item;
@@ -420,11 +431,11 @@ const GradesView: React.FC = () => {
                   month: "short",
                   year: "numeric",
                 })
-                } - ${period.end.toLocaleDateString(i18n.language, {
-                  month: "short",
-                  year: "numeric",
-                })
-                } `,
+                  } - ${period.end.toLocaleDateString(i18n.language, {
+                    month: "short",
+                    year: "numeric",
+                  })
+                  } `,
                 state: currentPeriod?.id === period.id ? "on" : "off",
                 image: Platform.select({
                   ios: (getPeriodNumber(period.name || "0")) + ".calendar"
