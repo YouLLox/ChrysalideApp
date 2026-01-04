@@ -3,14 +3,19 @@ import { Multi as EsupMulti } from "esup-multi.js";
 import { Auth, Services } from "@/stores/account/types";
 import { error } from "@/utils/logger/logger";
 
+import AurigaAPI from "../auriga";
+import {
+  Grade as SharedGrade,
+  Period,
+  PeriodGrades,
+  Subject,
+} from "../shared/grade";
 import { News } from "../shared/news";
 import { CourseDay } from "../shared/timetable";
 import { Capabilities, SchoolServicePlugin } from "../shared/types";
 import { fetchMultiNews } from "./news";
 import { refreshMultiSession } from "./refresh";
 import { fetchMultiTimetable } from "./timetable";
-import AurigaAPI from "../auriga";
-import { Period, PeriodGrades } from "../shared/grade";
 
 export class Multi implements SchoolServicePlugin {
   displayName = "Multi";
@@ -32,13 +37,12 @@ export class Multi implements SchoolServicePlugin {
     const refresh = await refreshMultiSession(this.accountId, credentials);
 
     this.authData = refresh.auth;
-    this.session = refresh.session; // This will be undefined for Auriga as per our refresh.ts change
+    this.session = refresh.session;
 
     if (credentials.additionals?.type === "auriga") {
       this.isAuriga = true;
       this.capabilities = [Capabilities.REFRESH, Capabilities.GRADES];
 
-      // Initialize API with credentials
       if (credentials.accessToken) {
         AurigaAPI.setToken(credentials.accessToken);
       }
@@ -48,13 +52,17 @@ export class Multi implements SchoolServicePlugin {
       ) {
         AurigaAPI.setCookie(credentials.additionals.cookies);
       }
+
+      await AurigaAPI.sync();
     }
 
     return this;
   }
 
   async getNews(): Promise<News[]> {
-    if (this.isAuriga) return []; // Auriga doesn't support news yet
+    if (this.isAuriga) {
+      return [];
+    }
     if (this.session) {
       return fetchMultiNews(this.session, this.accountId);
     }
@@ -63,7 +71,9 @@ export class Multi implements SchoolServicePlugin {
   }
 
   async getWeeklyTimetable(weekNumber: number): Promise<CourseDay[]> {
-    if (this.isAuriga) return []; // Not implemented for Auriga yet
+    if (this.isAuriga) {
+      return [];
+    }
     if (this.session) {
       return fetchMultiTimetable(this.session, this.accountId, weekNumber);
     }
@@ -74,10 +84,11 @@ export class Multi implements SchoolServicePlugin {
   // --- Auriga Specific Implementations ---
 
   async getGradesPeriods(): Promise<Period[]> {
-    if (!this.isAuriga) return [];
+    if (!this.isAuriga) {
+      return [];
+    }
 
     const grades = AurigaAPI.getAllGrades();
-    // Extract unique semesters
     const semesters = Array.from(
       new Set(grades.map(g => g.semester).filter(s => s > 0))
     ).sort((a, b) => b - a);
@@ -85,36 +96,90 @@ export class Multi implements SchoolServicePlugin {
     return semesters.map(s => ({
       id: `S${s}`,
       name: `Semestre ${s}`,
-      start: new Date().toISOString(), // Dummies for now
-      end: new Date().toISOString(),
+      start: new Date(),
+      end: new Date(),
+      createdByAccount: this.accountId,
     }));
   }
 
   async getGradesForPeriod(period: Period): Promise<PeriodGrades> {
-    if (!this.isAuriga) return { period: period.id, grades: [], averages: [] };
+    if (!this.isAuriga) {
+      return {
+        studentOverall: { value: 0 },
+        classAverage: { value: 0 },
+        subjects: [],
+        createdByAccount: this.accountId,
+      };
+    }
 
-    const semesterNum = parseInt(period.id.replace("S", ""));
+    const semesterNum = period.id ? parseInt(period.id.replace("S", "")) : 0;
     const grades = AurigaAPI.getAllGrades().filter(
       g => g.semester === semesterNum
     );
 
-    return {
-      period: period.id,
-      grades: grades.map(g => ({
-        id: g.name + g.date, // Approximate ID
-        name: g.name,
-        grade: {
-          value: parseFloat(g.grade),
-          outOf: 20,
-        },
-        date: new Date().toISOString(),
+    const subjectsMap: Record<string, Subject> = {};
+
+    grades.forEach(g => {
+      // Group by Name (e.g. "Algorithmique")
+      // Auriga payload "name" seems to be the Module name, or code?
+      // User says: property {string} name
+      const subjectName = g.name || "Unknown";
+
+      if (!subjectsMap[subjectName]) {
+        subjectsMap[subjectName] = {
+          id: subjectName,
+          name: subjectName,
+          studentAverage: { value: 0 },
+          classAverage: { value: 0 },
+          outOf: { value: 20 },
+          grades: [],
+        };
+      }
+
+      const gradeItem: SharedGrade = {
+        id: String(g.code),
+        subjectId: subjectName,
+        subjectName: subjectName,
+        description: g.type, // e.g. "Exam", "Project"
+        givenAt: new Date(), // Mock date
+        studentScore: { value: g.grade },
+        outOf: { value: 20 },
         coefficient: 1,
-        subject: {
-          name: g.name || "Matière inconnue",
-          color: "#000000",
-        },
-      })),
-      averages: [],
+        createdByAccount: this.accountId,
+      };
+
+      subjectsMap[subjectName].grades?.push(gradeItem);
+    });
+
+    // Calculate averages per subject
+    Object.values(subjectsMap).forEach(s => {
+      const sGrades = s.grades || [];
+      const total = sGrades.reduce(
+        (acc, curr) => acc + (curr.studentScore?.value || 0),
+        0
+      );
+      s.studentAverage = {
+        value: sGrades.length > 0 ? total / sGrades.length : 0,
+        outOf: 20,
+      };
+    });
+
+    const subjects = Object.values(subjectsMap);
+
+    // Calculate overall average
+    let overallTotal = 0;
+    let overallCount = 0;
+    subjects.forEach(s => {
+      overallTotal += s.studentAverage?.value || 0;
+      overallCount++;
+    });
+    const overallAverage = overallCount > 0 ? overallTotal / overallCount : 0;
+
+    return {
+      studentOverall: { value: overallAverage, outOf: 20 },
+      classAverage: { value: 0 },
+      subjects: subjects,
+      createdByAccount: this.accountId,
     };
   }
 }
