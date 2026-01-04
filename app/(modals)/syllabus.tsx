@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,7 +13,21 @@ import adjust from "@/utils/adjustColor";
 import { getSubjectColor } from "@/utils/subjects/colors";
 import { getSubjectName } from "@/utils/subjects/name";
 
+function cleanHtml(raw?: string | null): string {
+  if (!raw) { return ""; }
+  return raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li>/gi, "\n• ")
+    .replace(/<\/li>/gi, "")
+    .replace(/<p[^>]*>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .trim();
+}
+
 export default function SyllabusModal() {
+  const { i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ syllabusData: string }>();
 
@@ -40,18 +55,9 @@ export default function SyllabusModal() {
 
   /* Description Section */
   const rawDescription = syllabus.caption?.goals?.fr || syllabus.caption?.name;
-  const description = React.useMemo(() => {
-    if (!rawDescription) return "";
-    return rawDescription
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<li>/gi, "\n• ")
-      .replace(/<\/li>/gi, "")
-      .replace(/<p[^>]*>/gi, "\n")
-      .replace(/<\/p>/gi, "\n")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/<[^>]+>/g, "")
-      .trim();
-  }, [rawDescription]);
+  const description = React.useMemo(() => cleanHtml(rawDescription), [
+    rawDescription,
+  ]);
 
   return (
     <ScrollView
@@ -104,12 +110,7 @@ export default function SyllabusModal() {
               UE
             </Typography>
           </Item>
-          <Item>
-            <Typography variant="title">{syllabus.code}</Typography>
-            <Typography variant="body2" color="secondary">
-              Code
-            </Typography>
-          </Item>
+
           {syllabus.duration > 0 && (
             <Item>
               <Typography variant="title">
@@ -128,16 +129,7 @@ export default function SyllabusModal() {
               </Typography>
             </Item>
           )}
-          {syllabus.period && (
-            <Item>
-              <Typography variant="title">
-                {syllabus.period.startDate} → {syllabus.period.endDate}
-              </Typography>
-              <Typography variant="body2" color="secondary">
-                Période
-              </Typography>
-            </Item>
-          )}
+
         </List>
       </Stack>
 
@@ -151,11 +143,28 @@ export default function SyllabusModal() {
             {syllabus.exams.map((exam, index) => (
               <Item key={exam.id || index}>
                 <Typography variant="title">
-                  Coefficient: {exam.weighting}
-                </Typography>
-                <Typography variant="body2" color="secondary">
                   {exam.typeName || exam.type}
                 </Typography>
+                <Typography variant="body2" color="secondary">
+                  Coefficient: {exam.weighting}%
+                </Typography>
+                {!!exam.description && (
+                  <Typography
+                    variant="body2"
+                    color="tertiary"
+                    style={{ marginTop: 4 }}
+                  >
+                    {cleanHtml(
+                      typeof exam.description === "string"
+                        ? exam.description
+                        : exam.description[
+                        i18n.language.startsWith("en") ? "en" : "fr"
+                        ] ||
+                        exam.description.fr ||
+                        exam.description.en
+                    )}
+                  </Typography>
+                )}
               </Item>
             ))}
           </List>
@@ -169,8 +178,7 @@ export default function SyllabusModal() {
           <List>
             {syllabus.responsables.map((resp, index) => (
               <Item key={resp.uid || index}>
-                <Typography variant="title">{resp.login}</Typography>
-                <Typography variant="body2" color="secondary">
+                <Typography variant="title">
                   {resp.firstName} {resp.lastName}
                 </Typography>
               </Item>
@@ -195,22 +203,7 @@ export default function SyllabusModal() {
         </Stack>
       )}
 
-      {/* Locations Section */}
-      {syllabus.locations && syllabus.locations.length > 0 && (
-        <Stack gap={8} style={{ marginBottom: 24 }}>
-          <Typography variant="h6">Lieux</Typography>
-          <List>
-            {syllabus.locations.map((loc, index) => (
-              <Item key={loc.code || index}>
-                <Typography variant="title">{loc.code}</Typography>
-                <Typography variant="body2" color="secondary">
-                  {loc.name}
-                </Typography>
-              </Item>
-            ))}
-          </List>
-        </Stack>
-      )}
+
 
       {/* Description Section */}
       {!!description && (

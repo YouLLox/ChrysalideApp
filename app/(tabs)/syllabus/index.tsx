@@ -157,7 +157,7 @@ const SyllabusView: React.FC = () => {
           {syllabus.caption?.name || subjectName}
         </Typography>
         <Typography variant="caption" color="secondary">
-          {syllabus.code} • {syllabus.exams?.length || 0} {t("Syllabus_Exams", { count: syllabus.exams?.length || 0 })}
+          {syllabus.exams?.length || 0} {t("Syllabus_Exams", { count: syllabus.exams?.length || 0 })}
         </Typography>
 
         <Trailing>
