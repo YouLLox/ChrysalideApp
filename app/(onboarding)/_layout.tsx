@@ -29,110 +29,27 @@ export default function OnboardingLayout() {
                     name="serviceSelection"
                     options={{ ...newScreenOptions }}
                 />
-                {/* <Stack.Screen
-                    name="school/method"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ service: Services.PRONOTE }}
-                />
-                <Stack.Screen
-                    name="school/map"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ service: Services.PRONOTE, method: "automatic", city: "Paris" }}
-                />
-                <Stack.Screen
-                    name="school/search"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ service: Services.PRONOTE }}
-                /> */}
                 <Stack.Screen
                     name="end/color"
                     options={{ ...newScreenOptions }}
                     initialParams={{ accountId: "" }}
                 />
                 <Stack.Screen
-                    name="university/method"
+                    name="auriga/method"
                     options={{ ...newScreenOptions }}
                 />
                 <Stack.Screen
-                    name="university/multi/credentials"
+                    name="auriga/method/microsoft"
                     options={{ ...newScreenOptions }}
                 />
                 <Stack.Screen
-                    name="university/lannion/credentials"
+                    name="auriga/method/credentials"
                     options={{ ...newScreenOptions }}
                 />
-                {/* <Stack.Screen
-                    name="pronote/url"
-                    options={{ ...newScreenOptions }}
-                />
-                <Stack.Screen
-                    name="pronote/webview"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ url: "", serviceId: undefined }}
-                />
-                <Stack.Screen
-                    name="pronote/credentials"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ url: "", previousPage: "map" }}
-                />
-                <Stack.Screen
-                    name="ecoledirecte/credentials"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ url: "", previousPage: "map" }}
-                /> */}
                 <Stack.Screen
                     name="izly/credentials"
                     options={{ ...newScreenOptions }}
                     initialParams={{ url: "", previousPage: "map" }}
-                />
-                {/* <Stack.Screen
-                    name="pronote/qrcode"
-                    options={{ ...newScreenOptions }}
-                />
-                <Stack.Screen
-                    name="pronote/2fa"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ error: {}, session: {}, device: "" }}
-                />
-                <Stack.Screen
-                    name="turboself/credentials"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ action: "addAccount" }}
-                />
-                <Stack.Screen
-                    name="turboself/hostSelector"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ siblings: [], username: "", password: "", action: "addAccount" }}
-                />
-                <Stack.Screen
-                    name="ard/credentials"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ action: "addAccount" }}
-                />
-                <Stack.Screen
-                    name="alise/credentials"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ action: "addAccount" }}
-                />
-                <Stack.Screen
-                    name="skolengo/webview"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ ref: {} }}
-                /> */}
-                <Stack.Screen
-                    name="university/appscho/list"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ url: "", previousPage: "map" }}
-                />
-                <Stack.Screen
-                    name="university/appscho/webview"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ instanceId: "" }}
-                />
-                <Stack.Screen
-                    name="university/appscho/credentials"
-                    options={{ ...newScreenOptions }}
-                    initialParams={{ instanceId: "" }}
                 />
             </Stack>
         </View>

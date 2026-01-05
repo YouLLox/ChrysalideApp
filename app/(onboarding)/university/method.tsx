@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
   return (
     <OnboardingScrollingFlatList
       color={'#1E3035'}
-      lottie={require('@/assets/lotties/uni-services.json')}
+      lottie={require('@/assets/lotties/auriga.json')}
       title={t("ONBOARDING_SELECT_UNIVERSITIESERVICE")}
       step={2}
       totalSteps={2}

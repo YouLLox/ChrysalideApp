@@ -1,7 +1,3 @@
-import * as Ezly from "ezly";
-import { Session } from "pawdirecte";
-import { Skolengo } from "skolengojs";
-
 /**
  * Represents the storage structure for user accounts.
  *
@@ -46,8 +42,6 @@ export interface Account {
   readonly id: string;
   firstName: string;
   lastName: string;
-  schoolName?: string;
-  className?: string;
   customisation?: CustomisationStorage;
   services: ServiceAccount[];
   createdAt: string;
@@ -84,24 +78,14 @@ export interface ServiceAccount {
  *
  * @property {string} [accessToken] - Optional access token used for authentication.
  * @property {string} [refreshToken] - Optional refresh token used to obtain new access tokens.
- * @property {Skolengo} [session] - Optional, used in some libraries like Skolengo.js
  * @property {string} [additionals] - Optional record containing additional authentication-related key-value pairs.
  */
 export interface Auth {
   accessToken?: string;
   refreshToken?: string;
-  session?: Skolengo | Session | Ezly.Identification;
   additionals?: Record<string, string | number>;
 }
 
 export enum Services {
-  PRONOTE,
-  SKOLENGO,
-  ECOLEDIRECTE,
-  TURBOSELF,
-  ARD,
-  IZLY,
-  MULTI,
-  APPSCHO,
-  LANNION,
+  AURIGA,
 }
