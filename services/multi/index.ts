@@ -226,7 +226,7 @@ export class Multi implements SchoolServicePlugin {
         subjectId: subjectKey,
         subjectName: subjectName,
         description: description,
-        givenAt: new Date(),
+        givenAt: g.syncedAt ? new Date(g.syncedAt) : new Date(), // Use preserved sync date
         studentScore: { value: g.grade },
         outOf: { value: 20 },
         coefficient: coefficient,

@@ -4,6 +4,7 @@ export interface Grade {
   name: string;
   semester: number;
   grade: number;
+  syncedAt?: number; // Timestamp of when this grade was first synced
 }
 
 export interface Syllabus {

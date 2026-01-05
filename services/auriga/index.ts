@@ -89,6 +89,26 @@ class AurigaAPI {
       fetchedGrades = await this.fetchAllGrades();
       // Only save to cache if we got valid data (prevents wiping cache on 401 errors)
       if (fetchedGrades.length > 0) {
+        // Load existing cached grades to preserve syncedAt dates
+        const existingCached = storage.getString("auriga_grades");
+        const existingGrades: Grade[] = existingCached
+          ? JSON.parse(existingCached)
+          : [];
+
+        // Create a map of existing grades by code for quick lookup
+        const existingGradesMap = new Map<string, Grade>();
+        existingGrades.forEach(g => existingGradesMap.set(g.code, g));
+
+        // Preserve syncedAt dates for existing grades, set new date for new grades
+        const now = Date.now();
+        fetchedGrades = fetchedGrades.map(g => {
+          const existing = existingGradesMap.get(g.code);
+          return {
+            ...g,
+            syncedAt: existing?.syncedAt || now, // Preserve existing date or set new one
+          };
+        });
+
         storage.set("auriga_grades", JSON.stringify(fetchedGrades));
         console.log(`Fetched ${fetchedGrades.length} grades.`);
       } else {
