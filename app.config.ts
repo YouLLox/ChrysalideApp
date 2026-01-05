@@ -37,7 +37,7 @@ module.exports = {
       appStoreUrl:
         "https://apps.apple.com/us/app/papillon-lappli-scolaire/id6477761165",
       bundleIdentifier: "org.epimac.chrysalide",
-      associatedDomains: ["applinks:getpapillon.xyz"],
+      associatedDomains: [],
       icon: "./assets/app.icon",
       minimumOSVersion: "17.6",
       infoPlist: {

@@ -24,7 +24,7 @@ install! 'cocoapods',
 
 prepare_react_native_project!
 
-target 'Papillon' do
+target 'Chrysalide' do
   use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
