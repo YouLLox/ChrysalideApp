@@ -116,13 +116,13 @@ export const SubjectItem: React.FC<{ subject: Subject, grades: Grade[], getAvgIn
             </Text>
           </Stack>
 
-          <Stack flex inline>
-            <Typography nowrap variant='title' color={subjectAdjustedColor}>
+          <Stack style={{ flex: 1 }}>
+            <Typography numberOfLines={1} ellipsizeMode="tail" variant='title' color={subjectAdjustedColor}>
               {subjectName || "?"}
             </Typography>
           </Stack>
 
-          <Stack inline direction='horizontal' gap={1} hAlign='end' vAlign='end'>
+          <Stack inline direction='horizontal' gap={1} hAlign='end' vAlign='end' style={{ flexShrink: 0 }}>
             {subject.studentAverage.disabled ? (
               <Typography variant='h5' inline style={{ marginTop: 0 }}>
                 {subject.studentAverage.status}
@@ -140,7 +140,7 @@ export const SubjectItem: React.FC<{ subject: Subject, grades: Grade[], getAvgIn
       </TouchableOpacity>
 
       {subject.subjects ? (
-        <Stack gap={12} style={{ marginTop: 6 }}>
+        <Stack gap={12} style={{ marginTop: 6, width: "100%" }}>
           {subject.subjects.map((subSubject) => (
             <SubjectItem
               key={subSubject.id}
