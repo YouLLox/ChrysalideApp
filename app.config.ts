@@ -75,6 +75,7 @@ module.exports = {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "./plugins/withXcodeSchemes",
       "expo-router",
       "expo-font",
       "expo-video",
